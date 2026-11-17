@@ -3,190 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Market Control Center - Login</title>
+    <title>Market Control Center - Menu</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f4f7f6;
             display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* CONTAINER UTAMA (MEMBAGI DUA SISI) */
-        .main-container {
-            display: flex;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* SISI KIRI: TEMPAT GAMBAR MOTOR */
-        .left-side {
-            flex: 1.2;
-            /* SUDAH DISESUAIKAN DENGAN NAMA FILE DI GITHUB ANDA: motornong.png */
-            background: url('motornong.png') no-repeat center center;
-            background-size: cover;
-            position: relative;
-        }
-
-        /* EFEK GRADASI AGAR GAMBAR TERLIHAT ELEGAN */
-        .left-side::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(to right, rgba(0,0,0,0.1), rgba(0,0,0,0.4));
-        }
-
-        /* SISI KANAN: FORM LOGIN */
-        .right-side {
-            flex: 0.8;
-            display: flex;
             justify-content: center;
             align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .menu-container {
             background: #ffffff;
             padding: 40px;
-            box-sizing: border-box;
-            box-shadow: -5px 0 25px rgba(0,0,0,0.1);
-            z-index: 10;
-        }
-
-        .login-box {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 600px; /* Diperlebar sedikit agar muat 3 tombol sejajar */
             width: 100%;
-            max-width: 360px;
-        }
-
-        h2 {
-            color: #222;
-            margin-bottom: 8px;
-            font-weight: 700;
-            font-size: 28px;
-        }
-
-        p.subtitle {
-            color: #777;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 6px;
-            color: #444;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 14px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
             box-sizing: border-box;
+        }
+        h2 { color: #333; margin-bottom: 10px; }
+        p { color: #777; margin-bottom: 30px; }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap; /* Agar otomatis turun ke bawah jika layar kekecilan */
+        }
+        .menu-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 20px;
             font-size: 16px;
-            background: #f9f9f9;
-            transition: all 0.3s;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #007bff;
-            background: #fff;
-            box-shadow: 0 0 0 4px rgba(0,123,255,0.1);
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            background: #007bff;
-            border: none;
+            font-weight: bold;
             color: white;
-            font-size: 16px;
+            border: none;
             border-radius: 8px;
             cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s, transform 0.1s;
-            margin-top: 10px;
+            transition: transform 0.2s, background 0.3s;
+            text-decoration: none;
+            display: block;
         }
+        .btn-m1 { background: #007bff; }
+        .btn-m1:hover { background: #0056b3; transform: scale(1.05); }
+        
+        .btn-m2 { background: #28a745; }
+        .btn-m2:hover { background: #218838; transform: scale(1.05); }
 
-        button:hover {
-            background: #0056b3;
-        }
+        /* WARNA UNTUK TOMBOL M3 BARU (ORANYE/JINGGA) */
+        .btn-m3 { background: #fd7e14; }
+        .btn-m3:hover { background: #e8590c; transform: scale(1.05); }
 
-        button:active {
-            transform: scale(0.98);
-        }
-
-        .error-msg {
+        .logout-link {
+            display: inline-block;
+            margin-top: 30px;
             color: #dc3545;
+            text-decoration: none;
             font-size: 14px;
-            text-align: center;
-            margin-top: 15px;
-            display: none;
-            font-weight: 600;
-        }
-
-        /* PENGATURAN RESPONSIVE AGAR RAPI DI HP */
-        @media (max-width: 768px) {
-            .left-side {
-                display: none;
-            }
-            .right-side {
-                flex: 1;
-                padding: 20px;
-            }
         }
     </style>
 </head>
 <body>
 
-<div class="main-container">
-    <!-- SISI KIRI (GAMBAR) -->
-    <div class="left-side"></div>
-
-    <!-- SISI KANAN (FORM LOGIN) -->
-    <div class="right-side">
-        <div class="login-box">
-            <h2>Market Control Center</h2>
-            <p class="subtitle">Silakan masuk menggunakan akun Anda</p>
-            
-            <form id="loginForm">
-                <div class="input-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" placeholder="Masukkan username" required autocomplete="off">
-                </div>
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" placeholder="Masukkan password" required>
-                </div>
-                <button type="submit">Masuk</button>
-                <div id="errorMsg" class="error-msg">Username atau Password salah!</div>
-            </form>
-        </div>
+<div class="menu-container">
+    <h2>Market Control Center</h2>
+    <p>Silakan pilih dashboard yang ingin Anda akses:</p>
+    
+    <div class="button-group">
+        <a href="m1/index.html" class="menu-btn btn-m1">Akses Dashboard M1</a>
+        <a href="m2/index.html" class="menu-btn btn-m2">Akses Dashboard M2</a>
+        <!-- TOMBOL BARU MENUJU M3 -->
+        <a href="m3/index.html" class="menu-btn btn-m3">Akses Dashboard M3</a>
     </div>
+
+    <a href="index.html" class="logout-link">← Keluar / Log Out</a>
 </div>
-
-<script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault(); 
-        
-        const user = document.getElementById('username').value.trim();
-        const pass = document.getElementById('password').value;
-        const errorMsg = document.getElementById('errorMsg');
-
-        if (user.toLowerCase() === 'anong' && pass === 'gantengbet') {
-            errorMsg.style.display = 'none';
-            window.location.href = 'menu.html'; 
-        } else {
-            errorMsg.style.display = 'block';
-        }
-    });
-</script>
 
 </body>
 </html>
