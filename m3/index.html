@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard M3</title>
+    <title>Dashboard M3 - Full Screen</title>
 
     <!-- SCRIPT PROTEKSI LOGIN -->
     <script>
@@ -12,13 +12,58 @@
         }
     </script>
 
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: #fff3e0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .top-navbar {
+            background: #ffffff;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .top-navbar h2 {
+            margin: 0;
+            color: #333;
+            font-size: 20px;
+        }
+        .btn-back {
+            color: #fd7e14;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid #fd7e14;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .btn-back:hover {
+            background: #fd7e14;
+            color: #fff;
+        }
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
-<body style="font-family:'Segoe UI', sans-serif; padding:50px; background:#fff3e0; text-align:center;">
+<body>
 
-    <div style="background: white; padding: 40px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
-        <!-- KONTEN UTAMA KOSONG -->
-        <br><br>
-        <a href="../menu.html" style="color:#fd7e14; text-decoration:none; font-weight:bold; border: 1px solid #fd7e14; padding: 10px 20px; border-radius: 5px;">← Kembali ke Menu</a>
+    <div class="top-navbar">
+        <h2>📦 Dashboard M3 - Commodity Stock</h2>
+        <a href="../menu.html" class="btn-back">← Kembali ke Menu</a>
+    </div>
+
+    <div class="main-content">
+        <!-- Tempat menaruh konten full Anda -->
     </div>
 
 </body>
