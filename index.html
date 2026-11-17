@@ -96,21 +96,13 @@
         const pass = document.getElementById('password').value;
         const errorMsg = document.getElementById('errorMsg');
 
-        // PENGATURAN USERNAME & PASSWORD BARU
-        // Username 'anong' dengan password 'gantengbet' akan diarahkan ke MCC Dashboard
-        if (user.toLowerCase() === 'anong' && pass === 'gantengbet') {
-            errorMsg.style.display = 'none';
-            window.location.href = 'mcc-dashboard.html';
-        } 
-        // Jika Anda masih butuh akun cadangan untuk masuk ke RocknRoll Dashboard, 
-        // Anda bisa sesuaikan username/password di bawah ini. Saat ini diatur ke akun lama:
-        else if (user.toLowerCase() === 'rocknroll' && pass === 'rock123') {
-            errorMsg.style.display = 'none';
-            window.location.href = 'rr-dashboard.html';
-        } 
-        else {
-            errorMsg.style.display = 'block';
-        }
+       // PENGATURAN USERNAME & PASSWORD
+if (user.toLowerCase() === 'anong' && pass === 'gantengbet') {
+    errorMsg.style.style.display = 'none';
+    window.location.href = 'menu.html'; // Diarahkan ke halaman pilihan menu
+} else {
+    errorMsg.style.display = 'block';
+}
     });
 </script>
 
