@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Website</title>
+    <title>Market Control Center - Login</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -72,7 +72,8 @@
 <body>
 
 <div class="login-container">
-    <h2>Multi-Dashboard Login</h2>
+    <!-- NAMA TAMPILAN SUDAH DIGANTI -->
+    <h2>Market Control Center</h2>
     <form id="loginForm">
         <div class="input-group">
             <label for="username">Username</label>
@@ -89,17 +90,20 @@
 
 <script>
     document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault(); // Mencegah halaman reload otomatis
+        e.preventDefault(); 
         
         const user = document.getElementById('username').value.trim();
         const pass = document.getElementById('password').value;
         const errorMsg = document.getElementById('errorMsg');
 
-        // PENGATURAN DATA AKSES LOGIN (Bisa Anda ubah password-nya di sini)
-        if (user.toLowerCase() === 'mcc' && pass === 'mcc123') {
+        // PENGATURAN USERNAME & PASSWORD BARU
+        // Username 'anong' dengan password 'gantengbet' akan diarahkan ke MCC Dashboard
+        if (user.toLowerCase() === 'anong' && pass === 'gantengbet') {
             errorMsg.style.display = 'none';
             window.location.href = 'mcc-dashboard.html';
         } 
+        // Jika Anda masih butuh akun cadangan untuk masuk ke RocknRoll Dashboard, 
+        // Anda bisa sesuaikan username/password di bawah ini. Saat ini diatur ke akun lama:
         else if (user.toLowerCase() === 'rocknroll' && pass === 'rock123') {
             errorMsg.style.display = 'none';
             window.location.href = 'rr-dashboard.html';
