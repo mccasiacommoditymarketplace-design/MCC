@@ -72,7 +72,6 @@
 <body>
 
 <div class="login-container">
-    <!-- NAMA TAMPILAN SUDAH DIGANTI -->
     <h2>Market Control Center</h2>
     <form id="loginForm">
         <div class="input-group">
@@ -96,13 +95,13 @@
         const pass = document.getElementById('password').value;
         const errorMsg = document.getElementById('errorMsg');
 
-       // PENGATURAN USERNAME & PASSWORD
-if (user.toLowerCase() === 'anong' && pass === 'gantengbet') {
-    errorMsg.style.style.display = 'none';
-    window.location.href = 'menu.html'; // Diarahkan ke halaman pilihan menu
-} else {
-    errorMsg.style.display = 'block';
-}
+        // PENGATURAN USERNAME & PASSWORD (SUDAH DIPERBAIKI)
+        if (user.toLowerCase() === 'anong' && pass === 'gantengbet') {
+            errorMsg.style.display = 'none';
+            window.location.href = 'menu.html'; 
+        } else {
+            errorMsg.style.display = 'block';
+        }
     });
 </script>
 
