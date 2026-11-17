@@ -1,0 +1,793 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}</style></head><body>
+<title>ACM Market Data</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+/* Layout: header actions, data-source slots, ACM-style market data report (green banner, product blocks), manual adjustments, analysis KPIs, charts, insight list. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --ink:#131a24; --ink2:#4c5766; --ink3:#7a8595; --line:#e1e6ed; --grid:#edf0f4;
+  --hover:#eef2f8; --focus:#2a78d6; --ok:#0a7d52; --bad:#c0392b; --warn:#a15c00;
+  --hdr:#3a8a2a; --hdrink:#ffffff; --band:#e9ecea; --sect:#f1f3f2; --tot:#d9dcda;
+  --pc0:#2a78d6; --pc1:#eb6834; --pc2:#1baf7a; --pc3:#eda100; --pc4:#e87ba4; --pc5:#008300; --pc6:#6250d6; --pc7:#e34948;
+  --up:#0a7d52; --down:#c0392b;
+  --font:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif; --head:'Space Grotesk','Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f141b; --surface:#171e28; --ink:#eef1f5; --ink2:#b4bdca; --ink3:#8590a0; --line:#2a3340; --grid:#222b37;
+  --hover:#1f2833; --focus:#6aa6f0; --ok:#3fc592; --bad:#ef7b6e; --warn:#f0b35a;
+  --hdr:#2f7022; --hdrink:#f3fff0; --band:#1c2430; --sect:#1a212b; --tot:#26303d;
+  --pc0:#3987e5; --pc1:#d95926; --pc2:#199e70; --pc3:#c98500; --pc4:#d55181; --pc5:#0ca30c; --pc6:#9085e9; --pc7:#e66767;
+  --up:#3fc592; --down:#ef7b6e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f141b; --surface:#171e28; --ink:#eef1f5; --ink2:#b4bdca; --ink3:#8590a0; --line:#2a3340; --grid:#222b37;
+  --hover:#1f2833; --focus:#6aa6f0; --ok:#3fc592; --bad:#ef7b6e; --warn:#f0b35a;
+  --hdr:#2f7022; --hdrink:#f3fff0; --band:#1c2430; --sect:#1a212b; --tot:#26303d;
+  --pc0:#3987e5; --pc1:#d95926; --pc2:#199e70; --pc3:#c98500; --pc4:#d55181; --pc5:#0ca30c; --pc6:#9085e9; --pc7:#e66767;
+  --up:#3fc592; --down:#ef7b6e; color-scheme:dark}
+/* Bloomberg skin */
+:root[data-skin="bloomberg"]{
+  --bg:#000000; --surface:#0a0a0a; --ink:#ffffff; --ink2:#fb8b1e; --ink3:#b0701f; --line:#3b2a0f; --grid:#1a1409;
+  --hover:#1c1306; --focus:#4af6c3; --ok:#4af6c3; --bad:#ff433d; --warn:#ffd700;
+  --hdr:#fb8b1e; --hdrink:#000000; --band:#120d04; --sect:#160f04; --tot:#2a1a05;
+  --pc0:#3d8bff; --pc1:#fb8b1e; --pc2:#4af6c3; --pc3:#ffd700; --pc4:#c97cff; --pc5:#7ed321; --pc6:#00d1ff; --pc7:#ff433d;
+  --up:#4af6c3; --down:#ff433d; color-scheme:dark;
+  --font:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace; --head:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+:root[data-skin="bloomberg"] :is(.card,.btn,.seg,.seg button,select,input,.status,.slot,.tip,.kpi,.tablewrap,.chip,details){border-radius:2px!important}
+:root[data-skin="bloomberg"] h1,:root[data-skin="bloomberg"] .card h2{color:#fb8b1e;text-transform:uppercase;letter-spacing:.05em}
+:root[data-skin="bloomberg"] .seg button[aria-pressed="true"],:root[data-skin="bloomberg"] .btn.primary{background:#fb8b1e;color:#000;border-color:#fb8b1e}
+:root[data-skin="bloomberg"] .tip{background:#fb8b1e;color:#000}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.num{font-variant-numeric:tabular-nums}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-start;justify-content:space-between}
+h1{font:600 24px/1.15 var(--head);margin:0;letter-spacing:-.01em}
+.sub{color:var(--ink2);margin-top:4px}.foot{color:var(--ink3);font-size:12px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:500 13px var(--font);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 13px;cursor:pointer;min-height:34px;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--hover)} .btn[disabled]{opacity:.5;cursor:default}
+.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.btn.primary:hover{opacity:.9;background:var(--ink)}
+.seg{display:inline-flex;gap:4px;padding:3px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.seg button{font:500 13px var(--font);color:var(--ink2);background:none;border:0;border-radius:6px;padding:6px 11px;cursor:pointer;min-height:32px}
+.seg button:hover{background:var(--hover);color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+select,input[type=number],input[type=text]{font:13px var(--font);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-height:34px;max-width:100%}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+.fgroup{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.status{font-size:13px;padding:8px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--line);color:var(--ink2);display:flex;gap:10px;align-items:center;justify-content:space-between}
+.status.ok{border-color:var(--ok);color:var(--ok)} .status.err{border-color:var(--bad);color:var(--bad)}
+.status button{border:0;background:none;color:inherit;cursor:pointer;font-size:16px;line-height:1}
+.drop{outline:2px dashed var(--focus);outline-offset:6px}
+.slots{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.slot{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.slot .k{font-size:12px;color:var(--ink3);margin-top:2px;overflow-wrap:anywhere}
+.slot .s{font-weight:600;margin-top:4px;display:flex;gap:8px;align-items:center}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block;flex:none}
+.slot.on .dot{background:var(--ok)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.card h2{font:600 15px/1.2 var(--head);margin:0 0 2px}
+.card .hint{color:var(--ink3);font-size:12px;margin-bottom:12px}
+.empty{text-align:center;padding:48px 16px}.empty .hint{max-width:620px;margin:8px auto 18px}
+/* report */
+.report{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.banner{background:var(--hdr);color:var(--hdrink);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 16px;gap:12px}
+.banner .brand{font:700 20px var(--head);letter-spacing:-.01em}
+.banner .brand small{font:500 11px var(--font);opacity:.85;margin-left:6px}
+.banner .ttl{font:600 20px var(--head)}
+.meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 24px;padding:8px 16px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600}
+.pblock{padding:6px 12px 2px}
+.pname{font:600 19px var(--head);letter-spacing:.01em;text-transform:uppercase;margin:12px 4px 4px}
+.ptot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--sect);padding:4px 8px;font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase}
+.ptot b{color:var(--ink);font-variant-numeric:tabular-nums;margin:0 6px}
+.tablewrap{overflow-x:auto}
+table.rt{border-collapse:collapse;width:100%;min-width:820px;font-size:13px}
+.rt th{background:var(--hdr);color:var(--hdrink);font-size:12px;font-weight:700;padding:5px 8px;text-align:right;white-space:nowrap}
+.rt th:first-child,.rt td:first-child{text-align:left}
+.rt td{padding:5px 8px;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rt tbody tr:nth-child(even) td{background:var(--band)}
+.rt td.dash{color:var(--ink3)}
+.up{color:var(--up)}.down{color:var(--down)}
+.totals{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;padding:12px;border-top:1px solid var(--line);margin-top:10px}
+.tbox{display:flex;justify-content:space-between;gap:16px;background:var(--tot);padding:6px 12px;font-size:12px;font-weight:700;min-width:260px;flex:1 1 260px}
+.tbox b{font-variant-numeric:tabular-nums}
+details{border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:var(--surface)}
+summary{cursor:pointer;font-weight:600;font-size:13px}
+.manual{display:flex;flex-wrap:wrap;gap:12px 20px;margin-top:12px;align-items:flex-end}
+.manual .fgroup{align-items:flex-end}.manual label{display:flex;flex-direction:column;gap:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;background:var(--hover);border:1px solid var(--line);border-radius:99px;padding:3px 6px 3px 10px}
+.chip button{border:0;background:none;color:var(--ink2);cursor:pointer;font-size:14px;line-height:1;padding:2px 4px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;min-width:0}
+.kpi .v{font:600 24px/1.1 var(--head);margin-top:4px}.kpi .n{font-size:12px;color:var(--ink3);margin-top:2px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media(max-width:860px){.two{grid-template-columns:minmax(0,1fr)}.banner{grid-template-columns:1fr}.banner .ttl{display:none}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink2);margin-bottom:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.gb{display:flex;flex-direction:column;gap:12px}
+.gb .r{display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;align-items:center;font-size:12px}
+.gb .bars{display:flex;flex-direction:column;gap:3px}
+.gb .bar{display:flex;align-items:center;gap:6px}.gb .bar i{display:block;height:9px;border-radius:0 3px 3px 0;min-width:2px}
+.curves{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.curves .c{border:1px solid var(--line);border-radius:8px;padding:8px}
+svg text{fill:var(--ink3);font:10px var(--font)}
+.ins{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.ins li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;font-size:13.5px;line-height:1.5}
+.tag{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:99px;border:1px solid var(--line);color:var(--ink2);margin-top:2px;white-space:nowrap}
+.tag.watch{color:var(--warn);border-color:var(--warn)}
+.ins ul{margin:4px 0 0;padding-left:18px;color:var(--ink2);font-size:13px}
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12px;padding:7px 10px;border-radius:6px;max-width:260px;display:none;line-height:1.4}
+@media print{.actions,.slots,.status,details,.manualwrap{display:none!important}body{background:#fff!important;color:#000!important}.card,.report{break-inside:avoid}}
+</style>
+
+<div class="wrap" id="app">
+  <header>
+    <div style="min-width:0">
+      <h1>ACM Market Data</h1>
+      <div class="sub" id="sub"></div>
+    </div>
+    <div class="actions">
+      <div class="seg" id="fLang" role="group" aria-label="Language / Bahasa"><button data-l="id" aria-pressed="true">ID</button><button data-l="en" aria-pressed="false">EN</button></div>
+      <div class="fgroup"><label class="lbl" for="selSkin" data-i="theme"></label><select id="selSkin"></select></div>
+      <button class="btn primary" id="btnUpload" data-i="upload"></button>
+      <button class="btn" id="btnSample" data-i="sample" hidden></button>
+      <button class="btn" id="btnXlsx" data-i="exportXlsx" hidden></button>
+      <button class="btn" id="btnPdf" data-i="exportPdf" hidden></button>
+      <button class="btn" id="btnPrint" data-i="print" hidden></button>
+      <input type="file" id="file" accept=".csv,.xls,.xlsx" multiple hidden>
+      <input type="file" id="fileK" accept=".csv,.xls,.xlsx" hidden>
+    </div>
+  </header>
+  <div class="status" id="status" hidden><span id="statusMsg"></span><button id="statusX" aria-label="Close">×</button></div>
+
+  <section class="slots" id="slots"></section>
+
+  <section class="card empty" id="empty" hidden>
+    <h2 data-i="emptyTitle"></h2>
+    <p class="hint" data-i="emptyText"></p>
+    <button class="btn primary" id="btnUpload2" data-i="upload"></button>
+  </section>
+
+  <div id="main" style="display:flex;flex-direction:column;gap:16px" hidden>
+    <div class="fgroup" style="gap:10px 28px"><div class="fgroup"><label class="lbl" for="selDate" data-i="tradeDate"></label><select id="selDate"></select></div><div class="fgroup"><label class="lbl" for="selPrev" data-i="prevSel"></label><select id="selPrev"></select></div></div>
+    <section class="report" id="report"></section>
+    <details class="manualwrap" id="manualWrap">
+      <summary data-i="manualTitle"></summary>
+      <div class="hint foot" style="margin-top:6px" data-i="manualHint"></div>
+      <div class="manual">
+        <label><span class="lbl">USD/IDR</span><input type="number" id="inFx" step="any" min="0" style="width:120px"></label>
+        <label><span class="lbl" data-i="monthlyVol"></span><input type="number" id="inMonthly" step="1" min="0" style="width:140px"></label>
+        <label><span class="lbl" data-i="oiDiv"></span><select id="selDiv"><option value="2">2</option><option value="1">1</option></select></label>
+      </div>
+      <div class="manual">
+        <label><span class="lbl" data-i="contract"></span><select id="ovCon"></select></label>
+        <label><span class="lbl" data-i="field"></span><select id="ovField"></select></label>
+        <label><span class="lbl" data-i="value"></span><input type="number" id="ovVal" step="any" style="width:130px"></label>
+        <button class="btn" id="ovAdd" data-i="add"></button>
+      </div>
+      <div class="chips" id="ovChips"></div>
+    </details>
+    <details id="methodWrap"><summary data-i="methodTitle"></summary><div class="foot" style="margin-top:8px;line-height:1.7" id="method"></div></details>
+
+    <section class="kpis" id="kpis"></section>
+    <section class="two">
+      <div class="card"><h2 data-i="volOiTitle"></h2><div class="hint" data-i="volOiHint"></div><div class="legend" id="lgVO"></div><div class="gb" id="chVO"></div></div>
+      <div class="card"><h2 data-i="hoursTitle"></h2><div class="hint" data-i="hoursHint"></div><div class="legend" id="lgH"></div><div id="chH"></div></div>
+    </section>
+    <section class="card"><h2 data-i="curveTitle"></h2><div class="hint" data-i="curveHint"></div><div class="curves" id="chC"></div></section>
+    <section class="card"><h2 data-i="analysisTitle"></h2><div class="hint" data-i="analysisHint"></div><ul class="ins" id="insights"></ul></section>
+  </div>
+  <div class="foot" data-i="footNote"></div>
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+/*LIB-START*/
+const MD={};
+MD.pad=n=>String(n).padStart(2,'0');
+MD.norm=s=>String(s).toLowerCase().replace(/[^a-z0-9]/g,'');
+MD.parseCSV=function(text){
+  if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+  const first=text.slice(0,text.indexOf('\n')>0?text.indexOf('\n'):text.length);
+  const D=(first.split(';').length>first.split(',').length)?';':',';
+  const rows=[];let row=[],f='',q=false,i=0;const n=text.length;
+  while(i<n){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i+=2;continue}q=false;i++;continue}f+=c;i++;continue}
+    if(c==='"'){q=true;i++;continue}
+    if(c===D){row.push(f);f='';i++;continue}
+    if(c==='\r'){i++;continue}
+    if(c==='\n'){row.push(f);rows.push(row);row=[];f='';i++;continue}
+    f+=c;i++}
+  if(f!==''||row.length){row.push(f);rows.push(row)}
+  return rows;
+};
+MD.toObjects=function(rows){
+  if(!rows.length)return [];
+  const h=rows[0].map(x=>String(x).trim()),out=[];
+  for(let i=1;i<rows.length;i++){const r=rows[i];if(r.length===1&&r[0]==='')continue;const o={};for(let j=0;j<h.length;j++)o[h[j]]=r[j]===undefined?'':r[j];out.push(o)}
+  return out;
+};
+MD.detect=function(keys){
+  const n=new Set(keys.map(MD.norm));
+  if(n.has('contractticker')&&n.has('openquantity'))return 'positions';
+  if(n.has('contractticker')&&n.has('tradeprice')&&n.has('quantity'))return 'trades';
+  if(n.has('contractticker')&&n.has('businessdate')&&n.has('price'))return 'rates';
+  return null;
+};
+MD.col=function(keys){const m={};keys.forEach(k=>m[MD.norm(k)]=k);return m};
+MD.iso=function(v){
+  const s=String(v).trim();let m;
+  if(m=s.match(/^(\d{4})-(\d{2})-(\d{2})/))return m[1]+'-'+m[2]+'-'+m[3];
+  if(m=s.match(/^(\d{4})(\d{2})(\d{2})$/))return m[1]+'-'+m[2]+'-'+m[3];
+  if(m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))return m[3]+'-'+MD.pad(m[2])+'-'+MD.pad(m[1]);
+  return '';
+};
+MD.short=function(tk){const p=String(tk).trim().split('-');return p.length>=4?p.slice(2).join('-'):String(tk).trim()};
+MD.prefix=function(tk){const p=String(tk).trim().split('-');return p.length>=4?p.slice(0,2).join('-')+'-':''};
+MD.execTs=function(s){
+  s=String(s).trim();let m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if(m)return {ts:Date.UTC(+m[3],+m[2]-1,+m[1],+m[4],+m[5],+(m[6]||0))/1000,hk:`${m[3]}-${MD.pad(m[2])}-${MD.pad(m[1])}T${MD.pad(m[4])}`};
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if(m)return {ts:Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+(m[6]||0))/1000,hk:`${m[1]}-${m[2]}-${m[3]}T${MD.pad(m[4])}`};
+  return {ts:0,hk:''};
+};
+MD.ingestTrades=function(objs){
+  const c=MD.col(Object.keys(objs[0]));
+  const tk=c.contractticker,pr=c.tradeprice,q=c.quantity,dt=c.tradingdate||c.tradedate,bs=c.bs,ex=c.executiontime,tx=c.exchangetransactionid;
+  const seen=new Set(),list=[];let prefix='';
+  objs.forEach((o,i)=>{
+    const con=MD.short(o[tk]);const price=parseFloat(o[pr]),qty=parseFloat(o[q]);
+    if(!con||!isFinite(price)||!isFinite(qty))return;
+    const side=bs?String(o[bs]).trim().toUpperCase()[0]:'';
+    const txv=tx?String(o[tx]).trim():'';
+    if(txv){const key=txv+'|'+con;if(seen.has(key))return;seen.add(key)}else if(bs&&side!=='B')return;
+    const date=dt?MD.iso(o[dt]):'';if(!date)return;
+    if(!prefix)prefix=MD.prefix(o[tk]);
+    const e=ex?MD.execTs(o[ex]):{ts:0,hk:''};
+    list.push({i,con,price,qty,date,ts:e.ts,hk:e.hk});
+  });
+  list.sort((a,b)=>a.ts-b.ts||a.i-b.i);
+  const out={};
+  for(const t of list){
+    const d=out[t.date]||(out[t.date]={});let r=d[t.con];
+    if(!r)r=d[t.con]={o:t.price,h:t.price,l:t.price,c:t.price,v:0,n:0,pv:0,hrs:{}};
+    r.h=Math.max(r.h,t.price);r.l=Math.min(r.l,t.price);r.c=t.price;r.v+=t.qty;r.n++;r.pv+=t.price*t.qty;
+    if(t.hk)r.hrs[t.hk]=(r.hrs[t.hk]||0)+t.qty;
+  }
+  return {dates:out,count:list.length,rows:objs.length,prefix};
+};
+MD.ingestPositions=function(objs){
+  const c=MD.col(Object.keys(objs[0]));
+  const tk=c.contractticker,oq=c.openquantity,td=c.tradedate;
+  const pos={};let asOf='',prefix='';
+  for(const o of objs){
+    const con=MD.short(o[tk]);const q=parseFloat(o[oq]);if(!con||!isFinite(q))continue;
+    if(!prefix)prefix=MD.prefix(o[tk]);
+    if(q>0)pos[con]=(pos[con]||0)+q;else if(!(con in pos))pos[con]=0;
+    const d=td?MD.iso(o[td]):'';if(d>asOf)asOf=d;
+  }
+  return {asOf,long:pos,count:objs.length,rows:objs.length,prefix};
+};
+MD.ingestRates=function(objs){
+  const c=MD.col(Object.keys(objs[0]));
+  const bd=c.businessdate,tk=c.contractticker,pr=c.price;
+  const out={};let prefix='',n=0;
+  for(const o of objs){
+    const d=MD.iso(o[bd]),con=MD.short(o[tk]),p=parseFloat(o[pr]);
+    if(d&&con&&isFinite(p)){(out[d]||(out[d]={}))[con]=p;n++;if(!prefix)prefix=MD.prefix(o[tk])}
+  }
+  return {dates:out,count:n,rows:objs.length,prefix};
+};
+MD.newData=()=>({trades:{},settle:{},oi:null,files:{trades:null,positions:null,rates:[]},manual:{},oiDiv:2,prefix:'F-XACM-'});
+MD.merge=function(D,kind,res,name){
+  if(res.prefix)D.prefix=res.prefix;
+  if(kind==='trades'){for(const d in res.dates)D.trades[d]=res.dates[d];D.files.trades={name,dates:Object.keys(res.dates).sort(),n:res.count,rows:res.rows}}
+  else if(kind==='rates'){for(const d in res.dates)D.settle[d]=Object.assign(D.settle[d]||{},res.dates[d]);D.files.rates=(D.files.rates||[]).filter(x=>x.name!==name).concat([{name,dates:Object.keys(res.dates).sort(),n:res.count,rows:res.rows}])}
+  else if(kind==='positions'){D.oi={asOf:res.asOf,long:res.long};D.files.positions={name,asOf:res.asOf,n:Object.keys(res.long).length,rows:res.rows}}
+};
+MD.fromObjs=function(D,objs,name){
+  if(!objs.length)return {error:'empty'};
+  const kind=MD.detect(Object.keys(objs[0]));
+  if(!kind)return {error:'kind'};
+  const res=kind==='trades'?MD.ingestTrades(objs):kind==='positions'?MD.ingestPositions(objs):MD.ingestRates(objs);
+  MD.merge(D,kind,res,name);
+  return {kind,res};
+};
+/*LIB-END*/
+
+let DATA={"trades":{"2026-11-13":{"NSI-202612":{"o":49.97,"h":50.715,"l":48.415,"c":48.665,"v":1448,"n":975,"pv":72115.11,"hrs":{"2026-11-12T23":11,"2026-11-13T00":22,"2026-11-13T01":166,"2026-11-13T02":71,"2026-11-13T03":19,"2026-11-13T04":75,"2026-11-13T05":126,"2026-11-13T06":100,"2026-11-13T07":59,"2026-11-13T08":51,"2026-11-13T09":22,"2026-11-13T10":54,"2026-11-13T11":46,"2026-11-13T12":17,"2026-11-13T13":131,"2026-11-13T14":142,"2026-11-13T15":150,"2026-11-13T16":54,"2026-11-13T17":18,"2026-11-13T18":5,"2026-11-13T19":33,"2026-11-13T20":12,"2026-11-13T21":64}},"NPT-202704":{"o":1538,"h":1558.8,"l":1502,"c":1505.9,"v":144,"n":119,"pv":220904.90000000002,"hrs":{"2026-11-12T23":3,"2026-11-13T00":4,"2026-11-13T01":6,"2026-11-13T02":4,"2026-11-13T03":18,"2026-11-13T04":9,"2026-11-13T05":5,"2026-11-13T06":21,"2026-11-13T07":6,"2026-11-13T08":9,"2026-11-13T09":4,"2026-11-13T10":4,"2026-11-13T11":5,"2026-11-13T12":4,"2026-11-13T13":5,"2026-11-13T14":5,"2026-11-13T15":4,"2026-11-13T16":5,"2026-11-13T17":5,"2026-11-13T18":5,"2026-11-13T19":4,"2026-11-13T20":4,"2026-11-13T21":5}},"NSI-202703":{"o":50.605,"h":51.255,"l":49.225,"c":49.26,"v":221,"n":126,"pv":11121.625000000002,"hrs":{"2026-11-12T23":2,"2026-11-13T00":2,"2026-11-13T01":12,"2026-11-13T02":4,"2026-11-13T03":17,"2026-11-13T04":9,"2026-11-13T05":34,"2026-11-13T06":3,"2026-11-13T07":4,"2026-11-13T08":4,"2026-11-13T09":2,"2026-11-13T10":10,"2026-11-13T11":4,"2026-11-13T12":4,"2026-11-13T13":25,"2026-11-13T14":23,"2026-11-13T15":22,"2026-11-13T16":9,"2026-11-13T17":4,"2026-11-13T18":3,"2026-11-13T19":13,"2026-11-13T20":4,"2026-11-13T21":7}},"NCP-202701":{"o":6.242,"h":6.28,"l":6.081,"c":6.082,"v":130,"n":123,"pv":803.8325,"hrs":{"2026-11-12T23":2,"2026-11-13T00":5,"2026-11-13T01":9,"2026-11-13T02":4,"2026-11-13T03":4,"2026-11-13T04":4,"2026-11-13T05":6,"2026-11-13T06":4,"2026-11-13T07":4,"2026-11-13T08":8,"2026-11-13T09":7,"2026-11-13T10":5,"2026-11-13T11":6,"2026-11-13T12":4,"2026-11-13T13":8,"2026-11-13T14":6,"2026-11-13T15":9,"2026-11-13T16":6,"2026-11-13T17":9,"2026-11-13T18":4,"2026-11-13T19":5,"2026-11-13T20":5,"2026-11-13T21":6}},"NPT-202701":{"o":1520.8,"h":1541.2,"l":1485.4,"c":1489.4,"v":187,"n":172,"pv":283163.80000000016,"hrs":{"2026-11-12T23":2,"2026-11-13T00":4,"2026-11-13T01":16,"2026-11-13T02":8,"2026-11-13T03":9,"2026-11-13T04":5,"2026-11-13T05":15,"2026-11-13T06":8,"2026-11-13T07":15,"2026-11-13T08":13,"2026-11-13T09":5,"2026-11-13T10":4,"2026-11-13T11":7,"2026-11-13T12":6,"2026-11-13T13":13,"2026-11-13T14":9,"2026-11-13T15":15,"2026-11-13T16":7,"2026-11-13T17":5,"2026-11-13T18":4,"2026-11-13T19":8,"2026-11-13T20":4,"2026-11-13T21":5}},"NSI-202701":{"o":50.205,"h":50.885,"l":48.645,"c":48.74,"v":574,"n":379,"pv":28731.539999999994,"hrs":{"2026-11-12T23":6,"2026-11-13T00":7,"2026-11-13T01":32,"2026-11-13T02":16,"2026-11-13T03":13,"2026-11-13T04":33,"2026-11-13T05":34,"2026-11-13T06":33,"2026-11-13T07":32,"2026-11-13T08":38,"2026-11-13T09":27,"2026-11-13T10":14,"2026-11-13T11":13,"2026-11-13T12":13,"2026-11-13T13":89,"2026-11-13T14":69,"2026-11-13T15":50,"2026-11-13T16":12,"2026-11-13T17":7,"2026-11-13T18":4,"2026-11-13T19":9,"2026-11-13T20":5,"2026-11-13T21":18}},"NCP-202612":{"o":6.202,"h":6.244,"l":6.049,"c":6.0545,"v":178,"n":170,"pv":1096.4355000000003,"hrs":{"2026-11-12T23":2,"2026-11-13T00":4,"2026-11-13T01":18,"2026-11-13T02":9,"2026-11-13T03":8,"2026-11-13T04":11,"2026-11-13T05":13,"2026-11-13T06":6,"2026-11-13T07":12,"2026-11-13T08":8,"2026-11-13T09":4,"2026-11-13T10":5,"2026-11-13T11":8,"2026-11-13T12":5,"2026-11-13T13":13,"2026-11-13T14":9,"2026-11-13T15":9,"2026-11-13T16":8,"2026-11-13T17":5,"2026-11-13T18":6,"2026-11-13T19":6,"2026-11-13T20":4,"2026-11-13T21":5}},"NSI-202705":{"o":51.135,"h":51.605,"l":49.95,"c":49.95,"v":29,"n":21,"pv":1477.535,"hrs":{"2026-11-12T23":2,"2026-11-13T01":1,"2026-11-13T03":2,"2026-11-13T05":2,"2026-11-13T06":1,"2026-11-13T08":2,"2026-11-13T10":4,"2026-11-13T13":8,"2026-11-13T14":1,"2026-11-13T15":3,"2026-11-13T19":2,"2026-11-13T21":1}},"NCP-202702":{"o":6.2815,"h":6.315,"l":6.126,"c":6.1395,"v":49,"n":49,"pv":304.7929999999999,"hrs":{"2026-11-12T23":2,"2026-11-13T00":2,"2026-11-13T01":3,"2026-11-13T02":2,"2026-11-13T03":2,"2026-11-13T04":2,"2026-11-13T05":3,"2026-11-13T06":2,"2026-11-13T07":2,"2026-11-13T08":2,"2026-11-13T09":2,"2026-11-13T10":2,"2026-11-13T11":2,"2026-11-13T12":2,"2026-11-13T13":3,"2026-11-13T14":2,"2026-11-13T15":2,"2026-11-13T16":2,"2026-11-13T17":2,"2026-11-13T18":2,"2026-11-13T19":2,"2026-11-13T20":2,"2026-11-13T21":2}},"NPT-202707":{"o":1560,"h":1574.1,"l":1519.5,"c":1526,"v":55,"n":55,"pv":85119.89999999998,"hrs":{"2026-11-12T23":2,"2026-11-13T00":2,"2026-11-13T01":2,"2026-11-13T02":2,"2026-11-13T03":2,"2026-11-13T04":2,"2026-11-13T05":3,"2026-11-13T06":3,"2026-11-13T07":2,"2026-11-13T08":2,"2026-11-13T09":2,"2026-11-13T10":2,"2026-11-13T11":2,"2026-11-13T12":2,"2026-11-13T13":6,"2026-11-13T14":4,"2026-11-13T15":3,"2026-11-13T16":2,"2026-11-13T17":2,"2026-11-13T18":2,"2026-11-13T19":2,"2026-11-13T20":2,"2026-11-13T21":2}},"2SO-202701":{"o":63.96,"h":64.4,"l":63.84,"c":64.05,"v":114,"n":114,"pv":7304.809999999999,"hrs":{"2026-11-13T02":2,"2026-11-13T03":4,"2026-11-13T04":12,"2026-11-13T05":6,"2026-11-13T06":10,"2026-11-13T08":8,"2026-11-13T09":6,"2026-11-13T10":4,"2026-11-13T11":8,"2026-11-13T12":8,"2026-11-13T13":6,"2026-11-13T14":4,"2026-11-13T15":10,"2026-11-13T16":8,"2026-11-13T17":8,"2026-11-13T18":8,"2026-11-13T19":2}},"2SO-202703":{"o":64.43,"h":64.9,"l":64.41,"c":64.52,"v":52,"n":52,"pv":3360.3700000000013,"hrs":{"2026-11-13T03":2,"2026-11-13T04":2,"2026-11-13T05":4,"2026-11-13T06":2,"2026-11-13T08":4,"2026-11-13T09":4,"2026-11-13T10":2,"2026-11-13T11":6,"2026-11-13T12":4,"2026-11-13T13":2,"2026-11-13T14":2,"2026-11-13T15":6,"2026-11-13T16":4,"2026-11-13T17":4,"2026-11-13T18":4}},"2SO-202705":{"o":64.87,"h":65.35,"l":64.86,"c":65,"v":56,"n":56,"pv":3643.030000000001,"hrs":{"2026-11-13T03":2,"2026-11-13T04":4,"2026-11-13T05":6,"2026-11-13T06":2,"2026-11-13T08":4,"2026-11-13T09":4,"2026-11-13T10":2,"2026-11-13T11":6,"2026-11-13T12":4,"2026-11-13T13":2,"2026-11-13T14":2,"2026-11-13T15":6,"2026-11-13T16":4,"2026-11-13T17":4,"2026-11-13T18":4}}}},"settle":{"2026-11-13":{"NG1-202702":3918.3,"2SO-202705":64.97,"2SO-202703":64.54,"2SO-202701":64.06,"G10-202702":3918.3,"G10-202704":3950.6,"NCP-202612":6.052,"NCP-202701":6.084,"NCP-202702":6.1345,"NG1-202612":3886.3,"NG1-202704":3950.6,"G10-202612":3886.3,"NPT-202701":1489.8,"NPT-202704":1507,"NPT-202707":1526,"NPT-202710":1537.8,"NSI-202612":48.525,"NSI-202701":48.73,"NSI-202703":49.26,"NSI-202705":49.86},"2026-11-12":{"G10-202612":3885.3,"G10-202702":3917.3,"G10-202704":3949.5,"NG1-202612":3885.3,"NG1-202702":3917.3,"NG1-202704":3949.5,"NCP-202612":6.1865,"NCP-202701":6.224,"NCP-202702":6.2525,"NPT-202701":1516.6,"NPT-202704":1533.6,"NPT-202707":1551.7,"NPT-202710":1568.6,"NSI-202612":49.925,"NSI-202701":50.14,"NSI-202703":50.515,"NSI-202705":51}},"oi":{"asOf":"2026-11-13","long":{"NPT-202707":58,"NSI-202705":174,"NSI-202612":3544,"NSI-202701":2064,"NSI-202703":1038,"NCP-202701":142,"NCP-202612":272,"NPT-202704":144,"NPT-202701":188,"NCP-202702":30}},"files":{"trades":{"name":"FO_Trade_Listing_-_2026-11-16T080601.029.csv","dates":["2026-11-13"],"n":2411,"rows":4822},"positions":{"name":"FO_Open_Position_Details_-_2026-11-16T080019.303.csv","asOf":"2026-11-13","n":10,"rows":8480},"rates":[{"name":"FO_EoD_Rates_-_2026-11-16T080910.388.csv","dates":["2026-11-13"],"n":20,"rows":20},{"name":"reference-image","dates":["2026-11-12"],"n":17,"rows":17,"derived":true}]},"manual":{"2026-11-13":{"usdidr":18218,"monthly":31733,"oi":{"G10-202612":15}}},"oiDiv":2,"prefix":"F-XACM-"};
+const SAMPLE=JSON.parse(JSON.stringify(DATA));
+
+/* ---------- i18n ---------- */
+const L={
+id:{
+ theme:'Tema',skinAuto:'Otomatis',skinLight:'Terang',skinDark:'Gelap',upload:'Unggah beberapa file',upT:'Unggah Trade Listing',upP:'Unggah Open Position',upR:'Unggah EoD Rates (T)',wrongKind:'{f}: ini file {got}, bukan {want}. Pakai tombol unggah di kartu yang sesuai.',sample:'Data bawaan',exportXlsx:'Ekspor Excel',exportPdf:'Ekspor PDF',print:'Cetak',
+ emptyTitle:'Unggah file untuk menyusun Market Data',emptyText:'Unggah tiap file lewat tombol di kartunya, atau pilih beberapa file sekaligus: FO Trade Listing untuk Open, High, Low, Last, dan volume; FO Open Position Details untuk open interest; FO EoD Rates untuk settlement. Jenis file dikenali otomatis dari judul kolomnya. Anda juga bisa menyeret file ke halaman ini. File diproses di browser Anda.',
+ tradeDate:'Tanggal transaksi',slotTrades:'FO Trade Listing',slotTradesD:'Open, High, Low, Last, volume',slotPos:'FO Open Position Details',slotPosD:'Open interest',slotRates:'FO EoD Rates (T)',slotRatesD:'Settlement price tanggal laporan',slotPrev:'FO EoD Rates (T-1)',slotPrevD:'Settlement hari sebelumnya',uploadPrev:'Unggah settlement T-1',prevSel:'Settlement pembanding (T-1)',chgBasis:'Change = Settle {a} − Settle {b}',prevNotRates:'{f}: bukan file EoD Rates. Untuk settlement T-1 pilih file FO EoD Rates tanggal sebelumnya.',prevLater:'Tanggal di file ini tidak lebih awal dari {d}, jadi tidak dipakai sebagai T-1.',derivedName:'(diturunkan dari gambar referensi)',prevNone:'Belum ada. Change kosong sampai file T-1 diunggah.',
+ notLoaded:'Belum diunggah',loadedTrades:'{n} transaksi · {d}',loadedPos:'{n} kontrak · posisi s.d. {d}',loadedRates:'{n} harga · {d}',
+ marketData:'Market Data',tradeDateLbl:'TRADE DATE',month:'Month',open:'Open',high:'High',low:'Low',last:'Last',change:'Change',settle:'Settle',estVol:'Est. Volume',priorOi:'Prior Day OI',
+ estVolTotals:'Estimated volume totals',oiTotals:"Prior day's open interest totals",derivatives:'{p} Derivatives',
+ dailyVol:'Daily Volume Total',monthlyVol:'Monthly Volume Total',dailyOi:'Daily OI Total',
+ manualTitle:'Penyesuaian manual',manualHint:'Isi bila data belum ada di file: kurs, volume bulanan, OI kontrak yang tidak ada di file posisi, atau settlement hari sebelumnya untuk menghitung Change.',
+ oiDiv:'Pembagi posisi long',contract:'Kontrak',field:'Kolom',value:'Nilai',add:'Tambahkan',fOi:'Prior Day OI',fPrior:'Settlement sebelumnya',manualOne:'{c} · {f} = {v}',
+ methodTitle:'Cara menghitung',
+ method:'<b>Open / Last</b>: harga transaksi pertama / terakhir menurut Execution Time. <b>High / Low</b>: harga tertinggi / terendah. <b>Est. Volume</b>: jumlah Quantity satu sisi (transaksi beli dan jual dengan Exchange Transaction ID yang sama dihitung sekali). <b>Settle</b>: kolom Price pada FO EoD Rates. <b>Change</b>: Settle T dikurangi Settle T-1 (settlement tanggal sebelumnya dari file EoD Rates yang diunggah lewat tombol Unggah settlement T-1, atau isian manual). <b>Prior Day OI</b>: total Open Quantity long dari FO Open Position Details dibagi pembagi (standarnya 2, karena tiap posisi muncul di akun klien dan akun ACM). Volume bulanan dihitung dari file trade bila lebih dari satu hari dimuat, bila tidak, memakai isian manual.',
+ kTrades:'Transaksi',kTradesN:'trade unik',kVol:'Total volume',kLot:'lot',kOi:'Total OI',kOiN:'lot, posisi long',kTurn:'Volume / OI',kTurnN:'perputaran harian',kContracts:'Kontrak aktif',kContractsN:'dari {n} kontrak terdaftar',kPeak:'Jam tersibuk',
+ volOiTitle:'Volume dan OI per produk',volOiHint:'Volume transaksi hari ini dibanding open interest.',lgVol:'Volume',lgOi:'OI',
+ hoursTitle:'Volume per jam',hoursHint:'Jam menurut Execution Time pada file trade.',
+ curveTitle:'Kurva settlement per produk',curveHint:'Harga settlement menurut bulan kontrak. Titik pertama adalah kontrak terdekat.',
+ analysisTitle:'Analisa',analysisHint:'Disusun otomatis dari data pada tanggal yang dipilih.',watch:'Perhatian',info:'Info',
+ i_summary:'Total volume {v} lot dari {n} transaksi pada {c} kontrak yang diperdagangkan. Open interest {oi} lot, rasio volume terhadap OI {turn}x.',
+ i_summaryNoOi:'Total volume {v} lot dari {n} transaksi pada {c} kontrak yang diperdagangkan. Data open interest belum tersedia.',
+ i_lead:'{p} mendominasi aktivitas: {share} dari total volume ({v} lot) dan {oishare} dari open interest.',
+ i_top3:'Tiga kontrak teraktif adalah {list}, bersama-sama {share} dari total volume.',
+ i_front:'Volume {p} terkonsentrasi di kontrak terdekat {c} ({share} dari volume {p}). Kontrak berikutnya relatif sepi.',
+ i_turn:'Perputaran (volume / OI) tertinggi ada di {p1} ({x1}x) dan terendah di {p2} ({x2}x). Perputaran tinggi berarti posisi aktif berpindah tangan, perputaran rendah berarti posisi cenderung ditahan.',
+ i_move:'Perubahan settlement terbesar dari hari sebelumnya:',
+ i_range:'{c} bergerak paling lebar: rentang {range} (Low {l} sampai High {h}), dari Open {o} ke Last {la} ({mv}).',
+ i_gap:'Settlement berbeda dari harga terakhir lebih dari {th} pada kontrak berikut. Periksa apakah settlement memang mengikuti kurva dan bukan transaksi terakhir:',
+ i_curve:'Bentuk kurva settlement:',curveItem:'{p}: {shape}, {a} ke {b} ({pct}) dari {c1} ke {c2}',contango:'contango (kontrak jauh lebih mahal)',backw:'backwardation (kontrak jauh lebih murah)',flat:'datar',mixed:'campuran',
+ i_idle:'Kontrak yang punya OI tetapi tidak ada transaksi pada tanggal ini: {list}.',
+ i_noOi:'Kontrak yang ada transaksi tetapi OI-nya 0 atau belum ada: {list}. Kemungkinan posisi dibuka dan ditutup di hari yang sama, atau data posisi belum dimuat.',
+ i_noSettle:'Kontrak yang diperdagangkan tetapi belum punya settlement: {list}.',
+ i_noChange:'{n} kontrak tidak punya settlement hari sebelumnya, jadi kolom Change kosong. Unggah file EoD Rates T-1 lewat tombol Unggah settlement T-1, atau isi manual.',
+ i_oiAsOf:'Data posisi untuk OI adalah snapshot per {asOf}, bukan per {date}. Pastikan snapshot sesuai dengan hari yang dilihat.',
+ i_oiMissing:'File FO Open Position Details belum dimuat, jadi kolom Prior Day OI kosong.',
+ i_peak:'Jam tersibuk {h} dengan {v} lot ({share} dari total volume).',
+ i_monthly:'Volume hari ini {share} dari volume bulan berjalan ({m} lot).',
+ i_manualOi:'Prior Day OI untuk {list} berasal dari isian manual, bukan dari file posisi.',
+ noData:'Tidak ada data',footNote:'Data diproses di browser Anda dan tidak disimpan. Logo ACM tidak disertakan. Angka manual hanya berlaku selama halaman terbuka.',
+ parsing:'Membaca {f}…',loadedFile:'{f}: dikenali sebagai {k}, {n} baris.',kindTrades:'Trade Listing',kindPos:'Open Position Details',kindRates:'EoD Rates',
+ unknownFile:'{f}: jenis file tidak dikenali. Butuh kolom Contract Ticker bersama Trade Price dan Quantity (Trade Listing), Open Quantity (Open Position), atau Business Date dan Price (EoD Rates).',readFail:'{f}: file tidak bisa dibaca.',restored:'Kembali ke data bawaan.',
+ exporting:'Menyiapkan file…',saved:'File {f} tersimpan.',exportFail:'Ekspor gagal atau tidak tersedia di tampilan ini.',
+ summary:'Ringkasan produk',analysisSheet:'Analisa',hoursSheet:'Per jam',product:'Produk',share:'% Volume',oiShare:'% OI',turn:'Volume/OI',trades:'Transaksi',
+},
+en:{
+ theme:'Theme',skinAuto:'Auto',skinLight:'Light',skinDark:'Dark',upload:'Upload several files',upT:'Upload Trade Listing',upP:'Upload Open Position',upR:'Upload EoD Rates (T)',wrongKind:'{f}: this is a {got} file, not {want}. Use the upload button on the matching card.',sample:'Sample data',exportXlsx:'Export Excel',exportPdf:'Export PDF',print:'Print',
+ emptyTitle:'Upload files to build the Market Data report',emptyText:'Upload each file with the button on its card, or choose several files at once: FO Trade Listing for open, high, low, last and volume; FO Open Position Details for open interest; FO EoD Rates for settlement prices. The file type is recognised from its column titles. You can also drag files onto this page. Files are processed in your browser.',
+ tradeDate:'Trade date',slotTrades:'FO Trade Listing',slotTradesD:'Open, high, low, last, volume',slotPos:'FO Open Position Details',slotPosD:'Open interest',slotRates:'FO EoD Rates (T)',slotRatesD:'Settlement price of the report date',slotPrev:'FO EoD Rates (T-1)',slotPrevD:'Previous-day settlement',uploadPrev:'Upload T-1 settlement',prevSel:'Comparison settlement (T-1)',chgBasis:'Change = Settle {a} − Settle {b}',prevNotRates:'{f}: not an EoD Rates file. For T-1 settlement choose the FO EoD Rates file of the previous date.',prevLater:'The date in this file is not earlier than {d}, so it is not used as T-1.',derivedName:'(derived from the reference image)',prevNone:'Not loaded. Change stays blank until the T-1 file is uploaded.',
+ notLoaded:'Not uploaded',loadedTrades:'{n} trades · {d}',loadedPos:'{n} contracts · positions up to {d}',loadedRates:'{n} prices · {d}',
+ marketData:'Market Data',tradeDateLbl:'TRADE DATE',month:'Month',open:'Open',high:'High',low:'Low',last:'Last',change:'Change',settle:'Settle',estVol:'Est. Volume',priorOi:'Prior Day OI',
+ estVolTotals:'Estimated volume totals',oiTotals:"Prior day's open interest totals",derivatives:'{p} Derivatives',
+ dailyVol:'Daily Volume Total',monthlyVol:'Monthly Volume Total',dailyOi:'Daily OI Total',
+ manualTitle:'Manual adjustments',manualHint:'Fill in what the files do not hold: FX rate, monthly volume, OI for contracts missing from the position file, or the previous settlement to compute Change.',
+ oiDiv:'Long position divisor',contract:'Contract',field:'Field',value:'Value',add:'Add',fOi:'Prior Day OI',fPrior:'Previous settlement',manualOne:'{c} · {f} = {v}',
+ methodTitle:'How it is calculated',
+ method:'<b>Open / Last</b>: first / last trade price by Execution Time. <b>High / Low</b>: highest / lowest price. <b>Est. Volume</b>: sum of one-side Quantity (buy and sell rows with the same Exchange Transaction ID count once). <b>Settle</b>: the Price column of FO EoD Rates. <b>Change</b>: Settle T minus Settle T-1 (the settlement of the previous date from the EoD Rates file uploaded with the Upload T-1 settlement button, or a manual entry). <b>Prior Day OI</b>: total long Open Quantity from FO Open Position Details divided by the divisor (default 2, because each position appears in a client account and in the ACM account). Monthly volume is summed from the trade file when more than one day is loaded, otherwise the manual entry is used.',
+ kTrades:'Trades',kTradesN:'unique trades',kVol:'Total volume',kLot:'lots',kOi:'Total OI',kOiN:'lots, long positions',kTurn:'Volume / OI',kTurnN:'daily turnover',kContracts:'Active contracts',kContractsN:'of {n} listed contracts',kPeak:'Busiest hour',
+ volOiTitle:'Volume and OI by product',volOiHint:'Traded volume today against open interest.',lgVol:'Volume',lgOi:'OI',
+ hoursTitle:'Volume by hour',hoursHint:'Hours follow Execution Time in the trade file.',
+ curveTitle:'Settlement curve by product',curveHint:'Settlement price by contract month. The first point is the nearest contract.',
+ analysisTitle:'Analysis',analysisHint:'Generated automatically from the selected date.',watch:'Watch',info:'Info',
+ i_summary:'Total volume is {v} lots from {n} trades across {c} traded contracts. Open interest is {oi} lots, so volume to OI is {turn}x.',
+ i_summaryNoOi:'Total volume is {v} lots from {n} trades across {c} traded contracts. Open interest data is not available.',
+ i_lead:'{p} dominates activity: {share} of total volume ({v} lots) and {oishare} of open interest.',
+ i_top3:'The three most active contracts are {list}, together {share} of total volume.',
+ i_front:'{p} volume is concentrated in the nearest contract {c} ({share} of {p} volume). Later contracts are comparatively quiet.',
+ i_turn:'Turnover (volume / OI) is highest in {p1} ({x1}x) and lowest in {p2} ({x2}x). High turnover means active positions are changing hands; low turnover means positions tend to be held.',
+ i_move:'Largest settlement changes from the previous day:',
+ i_range:'{c} had the widest swing: range {range} (low {l} to high {h}), from open {o} to last {la} ({mv}).',
+ i_gap:'Settlement differs from the last traded price by more than {th} on these contracts. Check that settlement follows the curve and not the final trade:',
+ i_curve:'Settlement curve shape:',curveItem:'{p}: {shape}, {a} to {b} ({pct}) from {c1} to {c2}',contango:'contango (later contracts cost more)',backw:'backwardation (later contracts cost less)',flat:'flat',mixed:'mixed',
+ i_idle:'Contracts with open interest but no trades on this date: {list}.',
+ i_noOi:'Contracts that traded but show 0 or no OI: {list}. They may have been opened and closed the same day, or the position data is not loaded.',
+ i_noSettle:'Traded contracts without a settlement price: {list}.',
+ i_noChange:'{n} contracts have no previous-day settlement, so Change is blank. Upload the T-1 EoD Rates file with the Upload T-1 settlement button, or enter it manually.',
+ i_oiAsOf:'The position data behind OI is a snapshot as of {asOf}, not {date}. Make sure the snapshot matches the day you are viewing.',
+ i_oiMissing:'The FO Open Position Details file is not loaded, so Prior Day OI is blank.',
+ i_peak:'Busiest hour is {h} with {v} lots ({share} of total volume).',
+ i_monthly:"Today's volume is {share} of month-to-date volume ({m} lots).",
+ i_manualOi:'Prior Day OI for {list} comes from manual entries, not from the position file.',
+ noData:'No data',footNote:'Data is processed in your browser and is not stored. The ACM logo is not included. Manual figures last only while the page is open.',
+ parsing:'Reading {f}…',loadedFile:'{f}: recognised as {k}, {n} rows.',kindTrades:'Trade Listing',kindPos:'Open Position Details',kindRates:'EoD Rates',
+ unknownFile:'{f}: file type not recognised. It needs Contract Ticker with Trade Price and Quantity (Trade Listing), Open Quantity (Open Position), or Business Date and Price (EoD Rates).',readFail:'{f}: the file could not be read.',restored:'Back to the sample data.',
+ exporting:'Preparing file…',saved:'File {f} saved.',exportFail:'Export failed or is not available in this view.',
+ summary:'Product summary',analysisSheet:'Analysis',hoursSheet:'By hour',product:'Product',share:'% Volume',oiShare:'% OI',turn:'Volume/OI',trades:'Trades',
+}};
+let lang='id';
+try{const s=localStorage.getItem('md-lang');if(s==='id'||s==='en')lang=s;else if((navigator.language||'').toLowerCase().startsWith('en'))lang='en'}catch(e){}
+const t=(k,v)=>{let s=(L[lang][k]??L.id[k]??k);if(v)for(const x in v)s=s.split('{'+x+'}').join(v[x]);return s};
+const LOC=()=>lang==='id'?'id-ID':'en-US';
+const fmt=n=>Math.round(n).toLocaleString(LOC());
+const fmtD=(n,d)=>(+n).toLocaleString(LOC(),{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=(n,d=1)=>(n*100).toLocaleString(LOC(),{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
+const spct=(n,d=2)=>(n>0?'+':n<0?'−':'')+Math.abs(n*100).toLocaleString(LOC(),{minimumFractionDigits:d,maximumFractionDigits:d})+'%';
+const $=id=>document.getElementById(id);
+let skin='auto';const ORIG_THEME=document.documentElement.getAttribute('data-theme');
+try{const sv=localStorage.getItem('md-skin');if(['auto','light','dark','bloomberg'].includes(sv))skin=sv}catch(e){}
+function applySkin(){const h=document.documentElement;
+  if(skin==='bloomberg'){h.setAttribute('data-skin','bloomberg');h.setAttribute('data-theme','dark')}
+  else{h.removeAttribute('data-skin');if(skin==='auto'){if(ORIG_THEME)h.setAttribute('data-theme',ORIG_THEME);else h.removeAttribute('data-theme')}else h.setAttribute('data-theme',skin)}}
+applySkin();
+
+/* ---------- product metadata ---------- */
+const PNAME={'2SO':'Soybean Oil','G10':'Gold 10 Troy Ounces','NCP':'Nano Copper','NG1':'Nano Gold','NPT':'Nano Platinum','NSI':'Nano Silver'};
+const PDEC={NSI:3,NPT:1,NCP:4,G10:1,NG1:1,'2SO':4},SDEC={'2SO':2};
+const PHEX=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#6250d6','#e34948'];
+const prodOf=c=>c.split('-')[0];
+const expOf=c=>c.split('-').slice(1).join('-');
+function decOf(p,settle){
+  if(settle&&SDEC[p]!=null)return SDEC[p];
+  if(PDEC[p]!=null)return PDEC[p];
+  let m=0;const scan=v=>{const s=String(+v);const i=s.indexOf('.');if(i>=0)m=Math.max(m,Math.min(4,s.length-i-1))};
+  for(const d in DATA.trades)for(const c in DATA.trades[d])if(prodOf(c)===p){scan(DATA.trades[d][c].c)}
+  for(const d in DATA.settle)for(const c in DATA.settle[d])if(prodOf(c)===p)scan(DATA.settle[d][c]);
+  return m;
+}
+const pName=p=>t('derivatives',{p:(PNAME[p]||p).toUpperCase()});
+
+/* ---------- model ---------- */
+let curDate='';
+function allDates(){return [...new Set([...Object.keys(DATA.trades),...Object.keys(DATA.settle)])].sort()}
+function man(d){return DATA.manual[d]||(DATA.manual[d]={})}
+function buildReport(date){
+  const tr=DATA.trades[date]||{},se=DATA.settle[date]||{},m=DATA.manual[date]||{};
+  const prevDates=Object.keys(DATA.settle).filter(d=>d<date).sort();
+  const prevDate=(m.prevDate&&prevDates.includes(m.prevDate))?m.prevDate:(prevDates.length?prevDates[prevDates.length-1]:'');
+  const prev=prevDate?DATA.settle[prevDate]:{};
+  const set=new Set([...Object.keys(tr),...Object.keys(se),...(DATA.oi?Object.keys(DATA.oi.long):[]),...Object.keys(m.oi||{}),...Object.keys(m.priorSettle||{})]);
+  const byP={};
+  [...set].sort().forEach(c=>{
+    const p=prodOf(c),x=tr[c];
+    const settle=se[c]!=null?se[c]:null;
+    const ps=(m.priorSettle&&m.priorSettle[c]!=null)?m.priorSettle[c]:(prev[c]!=null?prev[c]:null);
+    let oi=null,oiManual=false;
+    if(m.oi&&m.oi[c]!=null){oi=m.oi[c];oiManual=true}else if(DATA.oi)oi=(DATA.oi.long[c]||0)/(DATA.oiDiv||1);
+    const row={con:c,exp:expOf(c),o:x?x.o:null,h:x?x.h:null,l:x?x.l:null,c:x?x.c:null,v:x?x.v:0,n:x?x.n:0,vwap:x&&x.v?x.pv/x.v:null,
+      settle,prior:ps,chg:(settle!=null&&ps!=null)?Math.round((settle-ps)*1e8)/1e8:null,oi,oiManual,hrs:x?x.hrs:{}};
+    (byP[p]||(byP[p]=[])).push(row);
+  });
+  const products=Object.keys(byP).sort().map(p=>{const rows=byP[p];return {code:p,name:PNAME[p]||p,rows,vol:rows.reduce((a,r)=>a+r.v,0),oi:rows.reduce((a,r)=>a+(r.oi||0),0),n:rows.reduce((a,r)=>a+r.n,0)}});
+  const vol=products.reduce((a,p)=>a+p.vol,0),oi=products.reduce((a,p)=>a+p.oi,0),n=products.reduce((a,p)=>a+p.n,0);
+  const month=date.slice(0,7),mdays=Object.keys(DATA.trades).filter(d=>d.startsWith(month)&&d<=date);
+  let monthly=null,monthlyManual=false;
+  if(m.monthly!=null&&m.monthly!==''){monthly=+m.monthly;monthlyManual=true}
+  else if(mdays.length>1)monthly=mdays.reduce((a,d)=>a+Object.values(DATA.trades[d]).reduce((s,r)=>s+r.v,0),0);
+  const hours={};
+  products.forEach(p=>p.rows.forEach(r=>{for(const k in r.hrs){(hours[k]||(hours[k]={}))[p.code]=(hours[k][p.code]||0)+r.hrs[k]}}));
+  return {date,prevDate,prevDates,products,vol,oi,n,monthly,monthlyManual,usdidr:m.usdidr!=null&&m.usdidr!==''?+m.usdidr:null,hours,
+    traded:products.reduce((a,p)=>a+p.rows.filter(r=>r.v>0).length,0),listed:products.reduce((a,p)=>a+p.rows.length,0)};
+}
+const dateLong=d=>{const [y,mo,da]=d.split('-').map(Number);return new Date(Date.UTC(y,mo-1,da)).toLocaleDateString(LOC(),{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})};
+const hrLabel=hk=>{const m=hk.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2})/);return m?`${m[3]}/${m[2]} ${m[4]}:00`:hk};
+
+/* ---------- insights ---------- */
+function insights(R){
+  const out=[];const add=(lvl,key,params,items)=>out.push({lvl,key,params,items});
+  const rows=R.products.flatMap(p=>p.rows);
+  const traded=rows.filter(r=>r.v>0);
+  if(traded.length){
+    if(R.oi>0)add('info','i_summary',{v:fmt(R.vol),n:fmt(R.n),c:traded.length,oi:fmt(R.oi),turn:fmtD(R.vol/R.oi,2)});
+    else add('info','i_summaryNoOi',{v:fmt(R.vol),n:fmt(R.n),c:traded.length});
+    const lead=R.products.slice().sort((a,b)=>b.vol-a.vol)[0];
+    if(lead&&lead.vol>0)add('info','i_lead',{p:lead.code,share:pct(lead.vol/R.vol),v:fmt(lead.vol),oishare:R.oi?pct(lead.oi/R.oi):'-'});
+    const top=traded.slice().sort((a,b)=>b.v-a.v).slice(0,3);
+    add('info','i_top3',{list:top.map(r=>`${r.con} (${fmt(r.v)})`).join(', '),share:pct(top.reduce((a,r)=>a+r.v,0)/R.vol)});
+    R.products.filter(p=>p.vol>=20).forEach(p=>{
+      const f=p.rows.filter(r=>r.v>0).sort((a,b)=>b.v-a.v)[0];
+      if(f&&f.v/p.vol>=0.55&&p.rows.filter(r=>r.v>0).length>1&&out.filter(o=>o.key==='i_front').length<3)add('info','i_front',{p:p.code,c:f.con,share:pct(f.v/p.vol)});
+    });
+    const tp=R.products.filter(p=>p.oi>0&&p.vol>0).map(p=>({p:p.code,x:p.vol/p.oi})).sort((a,b)=>b.x-a.x);
+    if(tp.length>=2)add('info','i_turn',{p1:tp[0].p,x1:fmtD(tp[0].x,2),p2:tp[tp.length-1].p,x2:fmtD(tp[tp.length-1].x,2)});
+  }
+  const mv=rows.filter(r=>r.chg!=null&&r.prior).map(r=>({r,pc:r.chg/r.prior})).sort((a,b)=>Math.abs(b.pc)-Math.abs(a.pc)).slice(0,4);
+  if(mv.length)add(Math.abs(mv[0].pc)>=0.02?'watch':'info','i_move',{},mv.map(x=>`${x.r.con}: ${spct(x.pc)} (${x.r.chg>0?'+':'−'}${fmtD(Math.abs(x.r.chg),decOf(prodOf(x.r.con)))})`));
+  const rg=traded.filter(r=>r.v>=10&&r.l>0).map(r=>({r,rg:(r.h-r.l)/r.l})).sort((a,b)=>b.rg-a.rg)[0];
+  if(rg){const r=rg.r,d=decOf(prodOf(r.con));add('info','i_range',{c:r.con,range:pct(rg.rg),l:fmtD(r.l,d),h:fmtD(r.h,d),o:fmtD(r.o,d),la:fmtD(r.c,d),mv:spct((r.c-r.o)/r.o)})}
+  const gap=traded.filter(r=>r.v>=10&&r.settle!=null&&Math.abs(r.c-r.settle)/r.settle>0.0025).sort((a,b)=>Math.abs(b.c-b.settle)/b.settle-Math.abs(a.c-a.settle)/a.settle).slice(0,4);
+  if(gap.length)add('watch','i_gap',{th:pct(0.0025,2)},gap.map(r=>{const d=decOf(prodOf(r.con));return `${r.con}: Last ${fmtD(r.c,d)} vs Settle ${fmtD(r.settle,decOf(prodOf(r.con),true))} (${spct((r.settle-r.c)/r.c)})`}));
+  const curve=R.products.map(p=>{
+    const pts=p.rows.filter(r=>r.settle!=null);if(pts.length<2)return null;
+    const a=pts[0],b=pts[pts.length-1];let up=0,dn=0;for(let i=1;i<pts.length;i++){if(pts[i].settle>pts[i-1].settle)up++;else if(pts[i].settle<pts[i-1].settle)dn++}
+    const shape=up&&!dn?'contango':dn&&!up?'backw':(!up&&!dn)?'flat':'mixed';
+    return t('curveItem',{p:p.code,shape:t(shape),a:fmtD(a.settle,decOf(p.code,true)),b:fmtD(b.settle,decOf(p.code,true)),pct:spct((b.settle-a.settle)/a.settle),c1:a.exp,c2:b.exp});
+  }).filter(Boolean);
+  if(curve.length)add('info','i_curve',{},curve);
+  const idle=rows.filter(r=>r.oi>0&&r.v===0).map(r=>r.con);
+  if(idle.length)add('info','i_idle',{list:idle.join(', ')});
+  const noOi=DATA.oi?traded.filter(r=>!r.oi).map(r=>r.con):[];
+  if(noOi.length)add('watch','i_noOi',{list:noOi.join(', ')});
+  const nos=traded.filter(r=>r.settle==null).map(r=>r.con);
+  if(nos.length)add('watch','i_noSettle',{list:nos.join(', ')});
+  const noc=rows.filter(r=>r.settle!=null&&r.prior==null).length;
+  if(noc)add('info','i_noChange',{n:noc});
+  if(!DATA.oi)add('watch','i_oiMissing',{});
+  else if(DATA.oi.asOf&&DATA.oi.asOf!==R.date)add('watch','i_oiAsOf',{asOf:DATA.oi.asOf,date:R.date});
+  const mo=rows.filter(r=>r.oiManual).map(r=>r.con);
+  if(mo.length)add('info','i_manualOi',{list:mo.join(', ')});
+  const hk=Object.keys(R.hours).map(k=>({k,v:Object.values(R.hours[k]).reduce((a,b)=>a+b,0)})).sort((a,b)=>b.v-a.v)[0];
+  if(hk&&R.vol)add('info','i_peak',{h:hrLabel(hk.k),v:fmt(hk.v),share:pct(hk.v/R.vol)});
+  if(R.monthly&&R.vol)add('info','i_monthly',{share:pct(R.vol/R.monthly),m:fmt(R.monthly)});
+  return out;
+}
+const insText=i=>t(i.key,i.params);
+
+/* ---------- rendering ---------- */
+const tip=$('tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.display='block';const w=tip.offsetWidth;let x=e.clientX+14,y=e.clientY+14;if(x+w>innerWidth-8)x=e.clientX-w-14;tip.style.left=Math.max(8,x)+'px';tip.style.top=y+'px'}
+function hideTip(){tip.style.display='none'}
+let R=null;
+const dash='<span class="dash">-</span>';
+function renderSlots(R0){
+  const f=DATA.files,rl=f.rates||[],date=R0?R0.date:'';
+  const fileFor=d=>{for(let i=rl.length-1;i>=0;i--)if(rl[i].dates.includes(d))return rl[i];return null};
+  const slot=(on,lbl,name,desc,extra='')=>`<div class="slot ${on?'on':''}"><div class="lbl">${lbl}</div><div class="s"><span class="dot"></span>${name}</div><div class="k">${desc}</div>${extra}</div>`;
+  const tr=f.trades,po=f.positions,pd=R0?R0.prevDate:'';
+  const tf=date?fileFor(date):null,pf=pd?fileFor(pd):null;
+  const nm=x=>x.derived?t('derivedName'):x.name;
+  const up=(k,label)=>`<div style="margin-top:8px"><button class="btn" data-up="${k}">${label}</button></div>`;
+  $('slots').innerHTML=
+    slot(!!tr,t('slotTrades'),tr?tr.name:t('notLoaded'),tr?t('loadedTrades',{n:fmt(tr.n),d:tr.dates.join(', ')}):t('slotTradesD'),up('trades',t('upT')))+
+    slot(!!po,t('slotPos'),po?po.name:t('notLoaded'),po?t('loadedPos',{n:fmt(po.n),d:po.asOf}):t('slotPosD'),up('positions',t('upP')))+
+    slot(!!tf,t('slotRates'),tf?nm(tf):t('notLoaded'),tf?t('loadedRates',{n:fmt(tf.n),d:date}):t('slotRatesD'),up('rates',t('upR')))+
+    slot(!!pf,t('slotPrev'),pf?nm(pf):t('notLoaded'),pf?t('loadedRates',{n:fmt(pf.n),d:pd}):t('prevNone'),up('prev',t('uploadPrev')));
+  $('slots').querySelectorAll('button[data-up]').forEach(b=>b.onclick=()=>{pendingKind=b.dataset.up;$('fileK').click()});
+}
+function renderReport(){
+  const dTxt=dateLong(R.date);
+  let h=`<div class="banner"><div class="brand">ACM Exchange</div><div class="ttl">${t('marketData')}</div><div></div></div>`+
+   `<div class="meta"><span>${t('tradeDateLbl')} : ${dTxt}</span><span>${t('chgBasis',{a:R.date,b:R.prevDate||'-'})}</span><span>USDIDR : ${R.usdidr!=null?fmt(R.usdidr):'-'}</span></div>`;
+  R.products.forEach(p=>{
+    const dp=decOf(p.code),ds=decOf(p.code,true);
+    h+=`<div class="pblock"><div class="pname">${pName(p.code)}</div><div class="ptot"><span>${t('estVolTotals')}<b>${fmt(p.vol)}</b></span><span>${t('oiTotals')}<b>${fmt(p.oi)}</b></span></div><div class="tablewrap"><table class="rt"><thead><tr><th>${t('month')}</th><th>${t('open')}</th><th>${t('high')}</th><th>${t('low')}</th><th>${t('last')}</th><th>${t('change')}</th><th>${t('settle')}</th><th>${t('estVol')}</th><th>${t('priorOi')}</th></tr></thead><tbody>`;
+    p.rows.forEach(r=>{
+      const px=v=>v==null?`<td class="dash">-</td>`:`<td>${fmtD(v,dp)}</td>`;
+      const ch=r.chg==null?`<td class="dash">-</td>`:`<td class="${r.chg>0?'up':r.chg<0?'down':''}">${r.chg>0?'+':''}${fmtD(r.chg,dp)}</td>`;
+      h+=`<tr><td>${DATA.prefix}${r.con}</td>${px(r.o)}${px(r.h)}${px(r.l)}${px(r.c)}${ch}<td>${r.settle==null?'-':fmtD(r.settle,ds)}</td><td>${fmt(r.v)}</td><td>${r.oi==null?'-':fmt(r.oi)}${r.oiManual?'*':''}</td></tr>`;
+    });
+    h+=`</tbody></table></div></div>`;
+  });
+  h+=`<div class="totals"><div class="tbox"><span>${t('dailyVol')} :</span><b>${fmt(R.vol)}</b></div><div class="tbox"><span>${t('dailyOi')} :</span><b>${DATA.oi||R.oi?fmt(R.oi):'-'}</b></div><div class="tbox"><span>${t('monthlyVol')} :</span><b>${R.monthly!=null?fmt(R.monthly):'-'}</b></div></div>`;
+  $('report').innerHTML=h;
+}
+function renderKpis(){
+  const turn=R.oi>0?R.vol/R.oi:null;
+  const hk=Object.keys(R.hours).map(k=>({k,v:Object.values(R.hours[k]).reduce((a,b)=>a+b,0)})).sort((a,b)=>b.v-a.v)[0];
+  const items=[[t('kTrades'),fmt(R.n),t('kTradesN')],[t('kVol'),fmt(R.vol),t('kLot')],[t('kOi'),R.oi?fmt(R.oi):'-',t('kOiN')],[t('kTurn'),turn==null?'-':fmtD(turn,2)+'x',t('kTurnN')],[t('kContracts'),R.traded,t('kContractsN',{n:R.listed})],[t('kPeak'),hk?hrLabel(hk.k).slice(-5):'-',hk?fmt(hk.v)+' '+t('kLot'):'']];
+  $('kpis').innerHTML=items.map(i=>`<div class="kpi"><div class="lbl">${i[0]}</div><div class="v num">${i[1]}</div><div class="n">${i[2]}</div></div>`).join('');
+}
+function renderVolOi(){
+  const mx=Math.max(1,...R.products.map(p=>Math.max(p.vol,p.oi)));
+  $('lgVO').innerHTML=`<span><i style="background:var(--pc0)"></i>${t('lgVol')}</span><span><i style="background:var(--pc1)"></i>${t('lgOi')}</span>`;
+  $('chVO').innerHTML=R.products.map(p=>`<div class="r"><b>${p.code}</b><div class="bars"><div class="bar"><i style="width:${p.vol/mx*100}%;background:var(--pc0)"></i><span class="num">${fmt(p.vol)}</span></div><div class="bar"><i style="width:${p.oi/mx*100}%;background:var(--pc1)"></i><span class="num">${fmt(p.oi)}</span></div></div></div>`).join('');
+}
+function renderHours(){
+  const keys=Object.keys(R.hours).sort(),prods=R.products.map(p=>p.code);
+  if(!keys.length){$('chH').innerHTML=`<div class="foot">${t('noData')}</div>`;$('lgH').innerHTML='';return}
+  const tot=k=>Object.values(R.hours[k]).reduce((a,b)=>a+b,0);
+  const mx=Math.max(...keys.map(tot));
+  const nice=v=>{const p=Math.pow(10,Math.floor(Math.log10(v)));const f=v/p;return (f<=1?1:f<=2?2:f<=5?5:10)*p};
+  const top=nice(mx),W=560,H=210,Lm=38,B=24,T=8,Rm=4,iw=W-Lm-Rm,ih=H-B-T,bw=iw/keys.length,step=Math.max(1,Math.ceil(keys.length/12));
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${t('hoursTitle')}">`;
+  for(let i=0;i<=4;i++){const y=T+ih-ih*i/4;s+=`<line x1="${Lm}" x2="${W-Rm}" y1="${y}" y2="${y}" stroke="var(--grid)"/><text x="${Lm-5}" y="${y+3}" text-anchor="end">${fmt(top*i/4)}</text>`}
+  keys.forEach((k,i)=>{
+    const x=Lm+i*bw;let y=T+ih;
+    prods.forEach((p,pi)=>{const v=R.hours[k][p]||0;if(!v)return;const hh=v/top*ih;y-=hh;s+=`<rect x="${x+bw*.14}" y="${y}" width="${bw*.72}" height="${Math.max(0,hh-1.2)}" fill="var(--pc${pi%8})" rx="${hh>4?2:0}"/>`});
+    s+=`<rect class="hit" data-k="${k}" x="${x}" y="${T}" width="${bw}" height="${ih}" fill="transparent"/>`;
+    if(i%step===0)s+=`<text x="${x+bw/2}" y="${H-8}" text-anchor="middle">${k.slice(-2)}</text>`;
+  });
+  $('chH').innerHTML=s+'</svg>';
+  $('lgH').innerHTML=prods.map((p,i)=>`<span><i style="background:var(--pc${i%8})"></i>${p}</span>`).join('');
+  $('chH').querySelectorAll('.hit').forEach(el=>{const k=el.dataset.k;el.onmousemove=e=>showTip(e,`<b>${hrLabel(k)}</b><br>${fmt(tot(k))} ${t('kLot')}`+prods.map(p=>R.hours[k][p]?`<br>${p}: ${fmt(R.hours[k][p])}`:'').join(''));el.onmouseleave=hideTip});
+}
+function renderCurves(){
+  const els=[];
+  R.products.forEach((p,pi)=>{
+    const pts=p.rows.filter(r=>r.settle!=null);if(pts.length<2)return;
+    const ds=decOf(p.code,true),vals=pts.map(r=>r.settle),mn=Math.min(...vals),mx=Math.max(...vals),pad=(mx-mn)*0.25||Math.abs(mx)*0.002;
+    const W=180,H=96,Lm=6,Rm=6,T=14,B=22,iw=W-Lm-Rm,ih=H-T-B,lo=mn-pad,hi=mx+pad;
+    const X=i=>Lm+(pts.length===1?iw/2:iw*i/(pts.length-1)),Y=v=>T+ih-(v-lo)/(hi-lo)*ih;
+    let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${p.code}"><polyline fill="none" stroke="var(--pc${pi%8})" stroke-width="2" points="${pts.map((r,i)=>X(i)+','+Y(r.settle)).join(' ')}"/>`;
+    pts.forEach((r,i)=>{s+=`<circle cx="${X(i)}" cy="${Y(r.settle)}" r="3.2" fill="var(--pc${pi%8})" stroke="var(--surface)" stroke-width="1.5"><title>${r.con}: ${fmtD(r.settle,ds)}</title></circle><text x="${X(i)}" y="${H-8}" text-anchor="${i===0?'start':i===pts.length-1?'end':'middle'}">${r.exp.slice(-4)}</text>`});
+    s+=`<text x="${Lm}" y="10" style="font-weight:600;fill:var(--ink)">${p.code}</text><text x="${W-Rm}" y="10" text-anchor="end">${fmtD(vals[0],ds)} → ${fmtD(vals[vals.length-1],ds)}</text></svg>`;
+    els.push(`<div class="c">${s}</div>`);
+  });
+  $('chC').innerHTML=els.join('')||`<div class="foot">${t('noData')}</div>`;
+}
+function renderInsights(){
+  $('insights').innerHTML=insights(R).map(i=>`<li><span class="tag ${i.lvl}">${t(i.lvl)}</span><div>${insText(i)}${i.items&&i.items.length?'<ul>'+i.items.map(x=>`<li style="display:list-item">${x}</li>`).join('')+'</ul>':''}</div></li>`).join('');
+}
+function renderManual(){
+  const m=DATA.manual[curDate]||{};
+  if(document.activeElement!==$('inFx'))$('inFx').value=m.usdidr!=null?m.usdidr:'';
+  if(document.activeElement!==$('inMonthly'))$('inMonthly').value=m.monthly!=null?m.monthly:'';
+  $('selDiv').value=String(DATA.oiDiv||2);
+  const cons=[...new Set(R.products.flatMap(p=>p.rows.map(r=>r.con)))];
+  const cur=$('ovCon').value;
+  $('ovCon').innerHTML=cons.map(c=>`<option>${c}</option>`).join('');if(cons.includes(cur))$('ovCon').value=cur;
+  $('ovField').innerHTML=`<option value="oi">${t('fOi')}</option><option value="priorSettle">${t('fPrior')}</option>`;
+  const chips=[];
+  for(const f of ['oi','priorSettle'])for(const c in (m[f]||{}))chips.push(`<span class="chip">${t('manualOne',{c,f:t(f==='oi'?'fOi':'fPrior'),v:m[f][c]})}<button data-f="${f}" data-c="${c}" aria-label="Remove">×</button></span>`);
+  $('ovChips').innerHTML=chips.join('');
+  $('ovChips').querySelectorAll('button').forEach(b=>b.onclick=()=>{delete man(curDate)[b.dataset.f][b.dataset.c];render()});
+}
+function applyStatic(){
+  document.documentElement.lang=lang;
+  document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+  $('method').innerHTML=t('method');
+  $('selSkin').innerHTML=[['auto',t('skinAuto')],['light',t('skinLight')],['dark',t('skinDark')],['bloomberg','Bloomberg']].map(([v,n])=>`<option value="${v}">${n}</option>`).join('');$('selSkin').value=skin;
+  $('fLang').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.l===lang));
+}
+function render(){
+  const dates=allDates(),has=dates.length>0;
+  $('main').hidden=!has;$('empty').hidden=has;
+  $('btnXlsx').hidden=!(has&&window.XLSX);$('btnPdf').hidden=!(has&&window.jspdf);
+  $('btnSample').hidden=JSON.stringify(DATA)===JSON.stringify(SAMPLE);
+  if(!has){renderSlots(null);$('sub').textContent='';return}
+  if(!dates.includes(curDate)){const td=Object.keys(DATA.trades).sort();curDate=td.length?td[td.length-1]:dates[dates.length-1]}
+  $('selDate').innerHTML=dates.map(d=>`<option value="${d}">${d} · ${dateLong(d).split(',')[0]}</option>`).join('');$('selDate').value=curDate;
+  R=buildReport(curDate);
+  renderSlots(R);
+  $('selPrev').innerHTML=R.prevDates.length?R.prevDates.slice().reverse().map(d=>`<option value="${d}">${d}</option>`).join(''):'<option value="">-</option>';$('selPrev').value=R.prevDate;$('selPrev').disabled=!R.prevDates.length;
+  $('sub').textContent=`${dateLong(curDate)} · ${fmt(R.n)} ${t('kTradesN')} · ${fmt(R.vol)} ${t('kLot')}`;
+  renderReport();renderKpis();renderVolOi();renderHours();renderCurves();renderInsights();renderManual();
+}
+
+/* ---------- upload ---------- */
+function setStatus(msg,kind){const s=$('status');s.hidden=!msg;s.className='status'+(kind?' '+kind:'');$('statusMsg').textContent=msg||''}
+async function readObjs(file){
+  if(/\.csv$/i.test(file.name)||file.type==='text/csv')return MD.toObjects(MD.parseCSV(await file.text()));
+  if(!window.XLSX)throw new Error('xlsx');
+  const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+  for(const n of wb.SheetNames){const o=XLSX.utils.sheet_to_json(wb.Sheets[n],{defval:''});if(o.length&&MD.detect(Object.keys(o[0])))return o}
+  return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+}
+let pendingKind=null;
+async function handleFiles(files,opts){
+  opts=opts||{};files=[...files];if(!files.length)return;
+  const want=opts.kind==='prev'?'rates':(opts.kind||null);
+  const kn={trades:'kindTrades',positions:'kindPos',rates:'kindRates'};
+  const msgs=[];let bad=false,lastRates=null,lastTrades=null;
+  for(const f of files){
+    setStatus(t('parsing',{f:f.name}));
+    await new Promise(r=>setTimeout(r,20));
+    try{
+      const objs=await readObjs(f);
+      const got=objs.length?MD.detect(Object.keys(objs[0])):null;
+      if(!got){msgs.push(t('unknownFile',{f:f.name}));bad=true;continue}
+      if(want&&got!==want){msgs.push(t('wrongKind',{f:f.name,got:t(kn[got]),want:t(kn[want])}));bad=true;continue}
+      const r=MD.fromObjs(DATA,objs,f.name);
+      if(r.error){msgs.push(t('unknownFile',{f:f.name}));bad=true;continue}
+      if(r.kind==='rates')lastRates=Object.keys(r.res.dates);
+      if(r.kind==='trades')lastTrades=Object.keys(r.res.dates);
+      msgs.push(t('loadedFile',{f:f.name,k:t(kn[r.kind]),n:fmt(objs.length)}));
+    }catch(e){msgs.push(t('readFail',{f:f.name}));bad=true}
+  }
+  curDate=opts.kind?curDate:'';
+  if(opts.kind==='trades'&&lastTrades)curDate=lastTrades.slice().sort().pop();
+  else if(opts.kind==='rates'&&lastRates)curDate=lastRates.slice().sort().pop();
+  render();
+  if(opts.kind==='prev'&&lastRates&&curDate){
+    const e=lastRates.filter(d=>d<curDate).sort();
+    if(e.length){man(curDate).prevDate=e[e.length-1];render()}else{msgs.push(t('prevLater',{d:curDate}));bad=true}
+  }
+  setStatus(msgs.join(' '),bad?'err':'ok');
+}
+
+/* ---------- export ---------- */
+let DL=null;
+const stamp=()=>curDate.replace(/-/g,'');
+function productSummary(){return R.products.map(p=>({code:p.code,vol:p.vol,oi:p.oi,n:p.n,share:R.vol?p.vol/R.vol:0,oiShare:R.oi?p.oi/R.oi:0,turn:p.oi?p.vol/p.oi:null}))}
+function reportAoa(){
+  const a=[['ACM Exchange - '+t('marketData')],[t('tradeDateLbl'),dateLong(R.date)],['USDIDR',R.usdidr!=null?R.usdidr:''],[t('chgBasis',{a:R.date,b:R.prevDate||'-'})],[]];
+  R.products.forEach(p=>{
+    a.push([pName(p.code)]);a.push([t('estVolTotals'),p.vol,'',t('oiTotals'),p.oi]);
+    a.push([t('month'),t('open'),t('high'),t('low'),t('last'),t('change'),t('settle'),t('estVol'),t('priorOi')]);
+    p.rows.forEach(r=>a.push([DATA.prefix+r.con,r.o??'',r.h??'',r.l??'',r.c??'',r.chg??'',r.settle??'',r.v,r.oi??'']));
+    a.push([]);
+  });
+  a.push([t('dailyVol'),R.vol],[t('dailyOi'),R.oi],[t('monthlyVol'),R.monthly??'']);
+  return a;
+}
+function insightLines(){
+  const lines=[];
+  insights(R).forEach(i=>{lines.push((i.lvl==='watch'?'['+t('watch')+'] ':'')+insText(i));(i.items||[]).forEach(x=>lines.push('   - '+x))});
+  return lines;
+}
+function exportXlsx(){
+  const wb=XLSX.utils.book_new();
+  const sh=(aoa,name,w)=>{const ws=XLSX.utils.aoa_to_sheet(aoa);if(w)ws['!cols']=w.map(x=>({wch:x}));XLSX.utils.book_append_sheet(wb,ws,name.slice(0,31))};
+  sh(reportAoa(),t('marketData'),[24,11,11,11,11,11,11,13,13]);
+  sh([[t('product'),t('kVol'),t('share'),t('kOi'),t('oiShare'),t('turn'),t('trades')],...productSummary().map(p=>[p.code,p.vol,Math.round(p.share*10000)/10000,p.oi,Math.round(p.oiShare*10000)/10000,p.turn==null?'':Math.round(p.turn*100)/100,p.n])],t('summary'),[10,12,10,10,10,10,10]);
+  const keys=Object.keys(R.hours).sort(),prods=R.products.map(p=>p.code);
+  sh([[t('kPeak'),...prods,'Total'],...keys.map(k=>[hrLabel(k),...prods.map(p=>R.hours[k][p]||0),Object.values(R.hours[k]).reduce((a,b)=>a+b,0)])],t('hoursSheet'),[16,...prods.map(()=>9),9]);
+  sh([[t('analysisTitle')+' - '+R.date],...insightLines().map(x=>[x])],t('analysisSheet'),[160]);
+  return {filename:`market-data_${stamp()}.xlsx`,data:XLSX.write(wb,{type:'array',bookType:'xlsx'})};
+}
+function exportPdf(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
+  const PW=doc.internal.pageSize.getWidth(),PH=doc.internal.pageSize.getHeight(),M=30;
+  const GREEN=[58,138,42],hex=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+  let y=M;
+  const ensure=h=>{if(y+h>PH-M){doc.addPage();y=M}};
+  doc.setFillColor(...GREEN);doc.rect(M,y,PW-2*M,26,'F');
+  doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('ACM Exchange',M+8,y+17);doc.text(t('marketData'),PW/2,y+17,{align:'center'});y+=36;
+  doc.setTextColor(20);doc.setFontSize(8);doc.text(`${t('tradeDateLbl')} : ${dateLong(R.date)}`,M,y);doc.text(`USDIDR : ${R.usdidr!=null?fmt(R.usdidr):'-'}`,PW-M,y,{align:'right'});y+=10;doc.setTextColor(90);doc.text(t('chgBasis',{a:R.date,b:R.prevDate||'-'}),M,y);doc.setTextColor(20);y+=10;
+  R.products.forEach(p=>{
+    const dp=decOf(p.code),ds=decOf(p.code,true);
+    ensure(70);
+    doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(20);doc.text(pName(p.code),M,y+10);y+=16;
+    doc.setFontSize(7.5);doc.setTextColor(90);doc.text(`${t('estVolTotals').toUpperCase()}  ${fmt(p.vol)}`,M,y+6);doc.text(`${t('oiTotals').toUpperCase()}  ${fmt(p.oi)}`,PW-M,y+6,{align:'right'});y+=9;
+    doc.autoTable({startY:y,margin:{left:M,right:M},theme:'plain',
+      head:[[t('month'),t('open'),t('high'),t('low'),t('last'),t('change'),t('settle'),t('estVol'),t('priorOi')]],
+      body:p.rows.map(r=>[DATA.prefix+r.con,r.o==null?'-':fmtD(r.o,dp),r.h==null?'-':fmtD(r.h,dp),r.l==null?'-':fmtD(r.l,dp),r.c==null?'-':fmtD(r.c,dp),r.chg==null?'-':(r.chg>0?'+':'')+fmtD(r.chg,dp),r.settle==null?'-':fmtD(r.settle,ds),fmt(r.v),r.oi==null?'-':fmt(r.oi)+(r.oiManual?'*':'')]),
+      styles:{font:'helvetica',fontSize:7.5,cellPadding:2.5,halign:'right'},headStyles:{fillColor:GREEN,textColor:255,fontStyle:'bold'},
+      columnStyles:{0:{halign:'left',cellWidth:96}},alternateRowStyles:{fillColor:[233,236,234]}});
+    y=doc.lastAutoTable.finalY+10;
+  });
+  ensure(60);
+  doc.autoTable({startY:y,margin:{left:M,right:M},theme:'plain',body:[[`${t('dailyVol')} : ${fmt(R.vol)}`,`${t('dailyOi')} : ${fmt(R.oi)}`,`${t('monthlyVol')} : ${R.monthly!=null?fmt(R.monthly):'-'}`]],styles:{font:'helvetica',fontSize:8,fontStyle:'bold',fillColor:[217,220,218],cellPadding:5}});
+  y=doc.lastAutoTable.finalY+16;
+  /* analysis */
+  doc.addPage();y=M;
+  doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(20);doc.text(t('analysisTitle')+' · '+R.date,M,y+12);y+=26;
+  doc.setFontSize(9);doc.text(t('volOiTitle'),M,y);y+=8;
+  const mx=Math.max(1,...R.products.map(p=>Math.max(p.vol,p.oi))),bw=PW-2*M-120;
+  R.products.forEach(p=>{
+    ensure(26);doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(40);doc.text(p.code,M,y+9);
+    doc.setFillColor(...hex(PHEX[0]));doc.rect(M+40,y+2,Math.max(1,p.vol/mx*bw),6,'F');doc.setFont('helvetica','normal');doc.text(fmt(p.vol),M+44+p.vol/mx*bw,y+8);
+    doc.setFillColor(...hex(PHEX[1]));doc.rect(M+40,y+11,Math.max(1,p.oi/mx*bw),6,'F');doc.text(fmt(p.oi),M+44+p.oi/mx*bw,y+17);y+=24;
+  });
+  doc.setFontSize(7);doc.setFillColor(...hex(PHEX[0]));doc.rect(M,y,8,8,'F');doc.setTextColor(60);doc.text(t('lgVol'),M+11,y+7);doc.setFillColor(...hex(PHEX[1]));doc.rect(M+70,y,8,8,'F');doc.text(t('lgOi'),M+81,y+7);y+=22;
+  doc.setFontSize(9);doc.setTextColor(20);
+  insightLines().forEach(l=>{
+    const sub=l.startsWith('   - ');const lines=doc.splitTextToSize(sub?l.trim():l,PW-2*M-(sub?18:0));
+    ensure(lines.length*12+4);doc.setFont('helvetica',sub?'normal':'normal');doc.text(lines,M+(sub?18:0),y+8);y+=lines.length*12+(sub?1:5);
+  });
+  const n=doc.getNumberOfPages();
+  for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(122,133,149);doc.text(`ACM Market Data · ${i}/${n}`,PW-M,PH-14,{align:'right'})}
+  return {filename:`market-data_${stamp()}.pdf`,data:doc.output('arraybuffer')};
+}
+async function doExport(kind,btn){
+  btn.disabled=true;setStatus(t('exporting'));
+  try{
+    await new Promise(r=>setTimeout(r,30));
+    const f=kind==='xlsx'?exportXlsx():exportPdf();
+    if(DL)await DL.save(f);
+    else{const url=URL.createObjectURL(new Blob([f.data]));const a=document.createElement('a');a.href=url;a.download=f.filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000)}
+    setStatus(t('saved',{f:f.filename}),'ok');
+  }catch(e){setStatus(t('exportFail'),'err')}
+  finally{btn.disabled=false}
+}
+
+/* ---------- wiring ---------- */
+$('fLang').querySelectorAll('button').forEach(b=>b.onclick=()=>{lang=b.dataset.l;try{localStorage.setItem('md-lang',lang)}catch(e){}applyStatic();render()});
+$('selSkin').onchange=e=>{skin=e.target.value;try{localStorage.setItem('md-skin',skin)}catch(x){}applySkin()};
+$('btnUpload').onclick=()=>$('file').click();
+$('btnUpload2').onclick=()=>$('file').click();
+$('fileK').onchange=e=>{handleFiles(e.target.files,{kind:pendingKind});e.target.value=''};
+$('selPrev').onchange=e=>{man(curDate).prevDate=e.target.value;render()};
+$('file').onchange=e=>{handleFiles(e.target.files);e.target.value=''};
+$('btnSample').onclick=()=>{DATA=JSON.parse(JSON.stringify(SAMPLE));curDate='';render();setStatus(t('restored'),'ok')};
+$('statusX').onclick=()=>setStatus('');
+$('btnXlsx').onclick=()=>doExport('xlsx',$('btnXlsx'));
+$('btnPdf').onclick=()=>doExport('pdf',$('btnPdf'));
+$('btnPrint').onclick=()=>{try{window.print()}catch(e){}};
+$('selDate').onchange=e=>{curDate=e.target.value;render()};
+$('inFx').onchange=e=>{const v=e.target.value;man(curDate).usdidr=v===''?null:+v;render()};
+$('inMonthly').onchange=e=>{const v=e.target.value;man(curDate).monthly=v===''?null:+v;render()};
+$('selDiv').onchange=e=>{DATA.oiDiv=+e.target.value;render()};
+$('ovAdd').onclick=()=>{const c=$('ovCon').value,f=$('ovField').value,v=$('ovVal').value;if(!c||v==='')return;const m=man(curDate);(m[f]||(m[f]={}))[c]=+v;$('ovVal').value='';render()};
+let dragN=0;
+addEventListener('dragenter',e=>{e.preventDefault();dragN++;$('app').classList.add('drop')});
+addEventListener('dragleave',()=>{dragN=Math.max(0,dragN-1);if(!dragN)$('app').classList.remove('drop')});
+addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{e.preventDefault();dragN=0;$('app').classList.remove('drop');if(e.dataTransfer&&e.dataTransfer.files.length)handleFiles(e.dataTransfer.files)});
+
+applyStatic();render();
+if(!window.XLSX&&!true)$('btnUpload').disabled=true;
+(async()=>{try{DL=await window.claude?.use?.('downloads')}catch(e){DL=null}
+  if(!DL)$('btnPrint').hidden=false;render()})();
+</script>
+
+</body></html>
