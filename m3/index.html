@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard M3 - Full Screen Content</title>
+    <title>Dashboard M3</title>
 
     <!-- SCRIPT PROTEKSI LOGIN -->
     <script>
@@ -17,7 +17,7 @@
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #fdfbf7;
+            background: #ffffff; /* Mengubah background menjadi putih bersih penuh */
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -55,133 +55,30 @@
             transform: translateY(-2px);
         }
 
-        /* AREA KONTEN UTAMA MEMENUHI LAYAR */
+        /* AREA AREA KONTEN UTAMA SECARA MAKSIMAL */
         .main-content {
             flex: 1;
             padding: 25px;
             box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        /* BARIS RINGKASAN STOK - FULL WIDTH */
-        .stock-summary-grid {
-            display: flex;
-            gap: 20px;
             width: 100%;
         }
-        .stock-card {
-            flex: 1;
-            background: #ffffff;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border-left: 5px solid #fd7e14;
-        }
-        .stock-card h3 { margin: 0 0 10px 0; color: #7c6e65; font-size: 14px; text-transform: uppercase; }
-        .stock-card p { margin: 0; font-size: 28px; font-weight: bold; color: #2d2219; }
-
-        /* WADAH TABEL LEBAR HINGGA SISI UJUNG SCREEN */
-        .table-container {
-            width: 100%;
-            background: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            overflow: hidden;
-            flex: 1;
-        }
-        .table-header {
-            background: #fdfaf6;
-            padding: 15px 20px;
-            border-bottom: 1px solid #eaddcf;
-            font-weight: bold;
-            color: #4a3b32;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-        th, td {
-            padding: 16px 20px;
-            border-bottom: 1px solid #f0e6dc;
-        }
-        th { background: #f5ece3; color: #5c4d43; font-weight: 600; }
-        tr:hover { background: #faf7f2; }
     </style>
 </head>
 <body>
 
     <!-- Navigasi Atas -->
     <div class="top-navbar">
-        <h2>📦 Market Control Center - Dashboard M3 (Commodity Stock)</h2>
+        <h2>📦 Market Control Center - Dashboard M3</h2>
         <a href="../menu.html" class="btn-back">← Kembali ke Menu</a>
     </div>
 
-    <!-- Konten Utama Lebar Penuh -->
+    <!-- Area Konten Utama Kosong & Lebar Penuh (100% Screen) -->
     <div class="main-content">
-        
-        <!-- Baris Kartu Status Inventori -->
-        <div class="stock-summary-grid">
-            <div class="stock-card">
-                <h3>Total Kapasitas Gudang</h3>
-                <p>85,000 Ton</p>
-            </div>
-            <div class="stock-card" style="border-left-color: #4caf50;">
-                <h3>Stok Tersedia</h3>
-                <p>62,450 Ton</p>
-            </div>
-            <div class="stock-card" style="border-left-color: #2196f3;">
-                <h3>Pengiriman Masuk (Inbound)</h3>
-                <p>4,800 Ton</p>
-            </div>
-        </div>
-
-        <!-- Tabel Monitoring Stok Komoditas -->
-        <div class="table-container">
-            <div class="table-header">Real-Time Commodity Inventory Control</div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Gudang Wilayah</th>
-                        <th>Kategori Barang</th>
-                        <th>Volume Saat Ini</th>
-                        <th>Pemanfaatan Ruang</th>
-                        <th>Status Operasional</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><b>Gudang A - Jakarta</b></td>
-                        <td>Beras Premium (Rice)</td>
-                        <td>24,500 Ton</td>
-                        <td style="color: #4caf50; font-weight: bold;">78%</td>
-                        <td><span style="background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Normal</span></td>
-                    </tr>
-                    <tr>
-                        <td><b>Gudang B - Surabaya</b></td>
-                        <td>Gula Kristal (Sugar)</td>
-                        <td>18,150 Ton</td>
-                        <td style="color: #4caf50; font-weight: bold;">65%</td>
-                        <td><span style="background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Normal</span></td>
-                    </tr>
-                    <tr>
-                        <td><b>Gudang C - Medan</b></td>
-                        <td>Jagung Pakan (Corn)</td>
-                        <td>19,800 Ton</td>
-                        <td style="color: #ff9800; font-weight: bold;">92% (Penuh)</td>
-                        <td><span style="background: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Kritikal</span></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
+        <!-- Anda bisa langsung mengetik kode atau menempelkan script data Anda di sini -->
     </div>
 
 </body>
 </html>
-
 
 
 <!doctype html>
