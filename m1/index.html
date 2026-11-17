@@ -1,3 +1,30 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard M1</title>
+
+    <!-- SCRIPT PROTEKSI LOGIN -->
+    <script>
+        if (localStorage.getItem('mcc_session') !== 'aktif') {
+            window.location.href = '../index.html';
+        }
+    </script>
+
+</head>
+<body style="font-family:'Segoe UI', sans-serif; padding:50px; background:#eef2f7; text-align:center;">
+
+    <div style="background: white; padding: 40px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+        <!-- KONTEN UTAMA KOSONG -->
+        <br><br>
+        <a href="../menu.html" style="color:#007bff; text-decoration:none; font-weight:bold; border: 1px solid #007bff; padding: 10px 20px; border-radius: 5px;">← Kembali ke Menu</a>
+    </div>
+
+</body>
+</html>
+
+
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}</style></head><body>
 <title>ACM Market Data</title>
