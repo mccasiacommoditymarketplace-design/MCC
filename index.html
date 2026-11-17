@@ -24,8 +24,9 @@
 
         /* SISI KIRI: TEMPAT GAMBAR MOTOR */
         .left-side {
-            flex: 1.2; /* Porsi layar kiri sedikit lebih lebar */
-            background: url('motor.png') no-repeat center center;
+            flex: 1.2;
+            /* SUDAH DISESUAIKAN DENGAN NAMA FILE DI GITHUB ANDA: motornong.png */
+            background: url('motornong.png') no-repeat center center;
             background-size: cover;
             position: relative;
         }
@@ -40,7 +41,7 @@
 
         /* SISI KANAN: FORM LOGIN */
         .right-side {
-            flex: 0.8; /* Porsi layar kanan untuk login */
+            flex: 0.8;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -133,7 +134,7 @@
         /* PENGATURAN RESPONSIVE AGAR RAPI DI HP */
         @media (max-width: 768px) {
             .left-side {
-                display: none; /* Gambar disembunyikan di HP agar form tidak kekecilan */
+                display: none;
             }
             .right-side {
                 flex: 1;
