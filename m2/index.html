@@ -5,6 +5,7 @@
   }
 </script>
 
+
 <!doctype html>
 <html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0}</style></head><body>
 <title>Market Activity Monitor</title>
@@ -169,6 +170,7 @@ tr.xrow td{background:color-mix(in srgb,#e34948 9%,transparent)}
     <div class="fgroup"><label class="lbl" for="selBrk">Broker ID</label><select id="selBrk"></select></div>
     <div class="fgroup"><label class="lbl" for="selFirm">Trading Firm ID</label><select id="selFirm"></select></div>
     <div class="fgroup"><span class="lbl" data-i="side"></span><div class="seg" id="fSide" role="group"></div></div>
+    <div class="fgroup"><label class="lbl" for="bigMin" data-i="bigMin"></label><input id="bigMin" type="number" min="1" step="1" style="width:74px;font:500 13px var(--font);padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)"></div>
     <div class="fgroup"><button class="btn" id="btnCross" aria-pressed="false" data-i="crossOnly"></button></div>
     <div class="fgroup" id="hourChipWrap" hidden><span class="chip"><span id="hourChip"></span><button id="hourClear" aria-label="Clear">×</button></span></div>
     <button class="btn" id="resetAll" data-i="reset"></button>
@@ -212,6 +214,14 @@ tr.xrow td{background:color-mix(in srgb,#e34948 9%,transparent)}
     <div class="foot" style="margin-top:10px" id="tblNote"></div>
   </section>
 
+  <section class="card" id="bigCard">
+    <h2 data-i="bigTitle"></h2>
+    <div class="hint" data-i="bigHint"></div>
+    <div class="seg" id="bigSeg" role="group" style="margin:6px 0"></div>
+    <div class="foot" id="bigSum" style="margin:6px 0 8px"></div>
+    <div class="tablewrap"><table id="btbl" style="min-width:900px"></table></div>
+  </section>
+
   <section class="card" id="crossCard">
     <h2 data-i="crossTitle"></h2>
     <div class="hint" data-i="crossHint"></div>
@@ -244,7 +254,12 @@ const SAMPLE_ROWS=ROWS;
 const L={
 id:{
  upload:'Unggah data',
- crossOnly:'Hanya Cross Trade',crossKpi:'Cross Trade',crossSub:'{v} lot · {p} dari volume · {a} akun',crossNone:'Tidak ada cross trade pada filter ini.',
+ crossOnly:'Hanya Cross Trade',
+ bigMin:'Trade/order besar ≥ (lot)',bigKpi:'Trade besar',bigSub:'{v} lot · {p} volume · {a} investor',bigNone:'Tidak ada trade ≥ {n} lot pada filter ini.',
+ bigTitle:'Monitor Trade / Order Besar',bigHint:'Mengidentifikasi investor di balik transaksi besar. Per Trade: satu trade ≥ batas lot. Per Order: total lot yang terisi dari satu Order ID (jadi order besar yang terisi mencicil kecil-kecil tetap terdeteksi). Per Investor: ringkasan investor yang punya order besar. Hanya berdasar file trade yang diunggah (order yang sebagian terisi di file/hari lain tidak terlihat). Klik baris untuk melihat detail transaksinya.',
+ bigModeTrade:'Per Trade',bigModeOrder:'Per Order',bigModeInv:'Per Investor',
+ bigSumT:'{n} trade ≥ {m} lot · {v} lot · {p} dari volume · {a} investor terlibat',bigSumO:'{n} order ≥ {m} lot · {v} lot terisi · {a} investor',bigSumI:'{n} investor memiliki order ≥ {m} lot',bigMore:'(menampilkan {m} teratas dari {n})',
+ orderId:'Order ID',sideC:'Sisi',invId:'Investor Id',firmC:'Firm',trdC:'Trader',brkC:'Broker',fills:'Fill',maxFill:'Fill terbesar',avgPx:'Harga rata-rata',span:'Rentang waktu',nOrders:'Order besar',buyLots:'Lot beli',sellLots:'Lot jual',insC:'Kontrak',buyInv:'Beli · Investor',sellInv:'Jual · Investor',sideB:'BELI',sideS:'JUAL',crossKpi:'Cross Trade',crossSub:'{v} lot · {p} dari volume · {a} akun',crossNone:'Tidak ada cross trade pada filter ini.',
  crossTitle:'Monitor Cross Trade',crossHint:'Cross trade = satu Trade ID di mana Position Account (Investor Id) sisi beli sama dengan sisi jual, dengan harga, volume, jam, trade date dan trading day yang identik di kedua baris. Mengikuti semua filter di atas. Klik baris akun untuk melihat transaksinya di tabel detail.',
  crossSummary:'{n} transaksi cross · {v} lot · {p} dari volume · {a} Position Account',crossMore:'(menampilkan {m} akun teratas dari {n} lainnya)',accNo:'Position Account (Investor Id)',crossTrades:'Transaksi',crossLots:'Lot',crossContracts:'Kontrak (lot)',crossBuyVia:'Beli via (Firm/Broker)',crossSellVia:'Jual via (Firm/Broker)',crossLast:'Terakhir',crossGo:'Lihat transaksinya',
  inconsNote:' Catatan: {n} Trade ID punya harga/volume/jam/tanggal yang berbeda antara sisi beli dan jual, tidak dihitung sebagai cross.',
@@ -282,7 +297,12 @@ id:{
 },
 en:{
  upload:'Upload data',
- crossOnly:'Cross Trades only',crossKpi:'Cross Trade',crossSub:'{v} lots · {p} of volume · {a} accounts',crossNone:'No cross trades under these filters.',
+ crossOnly:'Cross Trades only',
+ bigMin:'Large trade/order ≥ (lots)',bigKpi:'Large trades',bigSub:'{v} lots · {p} volume · {a} investors',bigNone:'No trades ≥ {n} lots under these filters.',
+ bigTitle:'Large Trade / Order Monitor',bigHint:'Identifies the investors behind large transactions. Per Trade: one trade ≥ the lot threshold. Per Order: total lots filled for one Order ID (so a big order filled in small pieces is still caught). Per Investor: summary of investors holding large orders. Based only on the uploaded trade file (orders partially filled in another file/day are not visible). Click a row to see its trades.',
+ bigModeTrade:'Per Trade',bigModeOrder:'Per Order',bigModeInv:'Per Investor',
+ bigSumT:'{n} trades ≥ {m} lots · {v} lots · {p} of volume · {a} investors involved',bigSumO:'{n} orders ≥ {m} lots · {v} lots filled · {a} investors',bigSumI:'{n} investors hold orders ≥ {m} lots',bigMore:'(showing top {m} of {n})',
+ orderId:'Order ID',sideC:'Side',invId:'Investor Id',firmC:'Firm',trdC:'Trader',brkC:'Broker',fills:'Fills',maxFill:'Largest fill',avgPx:'Avg price',span:'Time span',nOrders:'Large orders',buyLots:'Buy lots',sellLots:'Sell lots',insC:'Contracts',buyInv:'Buy · Investor',sellInv:'Sell · Investor',sideB:'BUY',sideS:'SELL',crossKpi:'Cross Trade',crossSub:'{v} lots · {p} of volume · {a} accounts',crossNone:'No cross trades under these filters.',
  crossTitle:'Cross Trade Monitor',crossHint:'Cross trade = one Trade ID where the buy-side Position Account (Investor Id) equals the sell-side one, with identical price, volume, time, trade date and trading day on both rows. Follows all filters above. Click an account row to see its trades in the detail table.',
  crossSummary:'{n} cross trades · {v} lots · {p} of volume · {a} Position Accounts',crossMore:'(showing top {m} accounts, {n} more not shown)',accNo:'Position Account (Investor Id)',crossTrades:'Trades',crossLots:'Lots',crossContracts:'Contracts (lots)',crossBuyVia:'Buy via (Firm/Broker)',crossSellVia:'Sell via (Firm/Broker)',crossLast:'Last',crossGo:'View its trades',
  inconsNote:' Note: {n} Trade IDs have different price/volume/time/date between buy and sell rows and are not counted as cross.',
@@ -339,7 +359,8 @@ const KNOWN={NSI:0,NPT:1,NCP:2,'2SO':4},FREE=[3,5,6,7];
 const PHEX=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#6250d6','#e34948'];
 let PRODUCTS=[],PIDX={},ALLINS=0;
 const pcol=p=>`var(--pc${PIDX[p]??7})`;
-const st={prod:'ALL',ins:'',firm:'',brk:'',side:'ALL',hour:null,dim:'ins',metric:'vol',sortDir:-1,top:10,q:'',dq:'',dSort:'ts',dDir:1,page:0,cross:false};
+const st={prod:'ALL',ins:'',firm:'',brk:'',side:'ALL',hour:null,dim:'ins',metric:'vol',sortDir:-1,top:10,q:'',dq:'',dSort:'ts',dDir:1,page:0,cross:false,big:10,bigMode:'order'};
+try{const b=+localStorage.getItem('mam-big');if(b>0)st.big=b}catch(e){}
 const DIMS=[
  {k:'ins',n:'dKontrak',h:'tKontrak',own:true},
  {k:'firm',n:'dFirm',h:'tFirm',bs:[4,8]},
@@ -414,6 +435,18 @@ function crossData(rows){
   const vol=x.reduce((a,r)=>a+r[3],0);
   return {x,trades:x.length,vol,share:all?vol/all:0,accs};
 }
+function bigData(rows){
+  const min=st.big,all=rows.reduce((a,r)=>a+r[3],0),trades=rows.filter(r=>r[3]>=min).sort((a,b)=>b[3]-a[3]||a[0]-b[0]),om=new Map();
+  for(const r of rows)for(let s=0;s<2;s++){if(!sideOn(r,s))continue;const oid=r[13+s];if(!oid)continue;const key=(s?'S':'B')+'|'+oid;
+    let o=om.get(key);if(!o){o={oid,side:s?'S':'B',inv:r[5+4*s],firm:r[4+4*s],trd:r[6+4*s],brk:r[7+4*s],vol:0,fills:0,max:0,val:0,ins:new Map(),t0:r[0],t1:r[0]};om.set(key,o)}
+    o.vol+=r[3];o.fills++;o.max=Math.max(o.max,r[3]);o.val+=r[3]*r[2];o.ins.set(r[1],(o.ins.get(r[1])||0)+r[3]);o.t0=Math.min(o.t0,r[0]);o.t1=Math.max(o.t1,r[0])}
+  const orders=[...om.values()].filter(o=>o.vol>=min).sort((a,b)=>b.vol-a.vol||a.t0-b.t0),im=new Map();
+  for(const o of orders){let i=im.get(o.inv);if(!i){i={inv:o.inv,firms:new Set(),trds:new Set(),brks:new Set(),orders:0,buy:0,sell:0,ins:new Set()};im.set(o.inv,i)}
+    i.firms.add(o.firm);i.trds.add(o.trd);i.brks.add(o.brk);i.orders++;o.side==='B'?i.buy+=o.vol:i.sell+=o.vol;o.ins.forEach((v,k)=>i.ins.add(k))}
+  const invs=[...im.values()].sort((a,b)=>(b.buy+b.sell)-(a.buy+a.sell));
+  const vol=trades.reduce((a,r)=>a+r[3],0),ia=new Set();trades.forEach(r=>{if(sideOn(r,0))ia.add(r[5]);if(sideOn(r,1))ia.add(r[9])});
+  return {min,trades,orders,invs,vol,share:all?vol/all:0,invCount:ia.size};
+}
 function hourData(rows){
   const byH=new Map();
   rows.forEach(r=>{const h=hourOf(r);if(!byH.has(h)){const o={t:0};PRODUCTS.forEach(p=>o[p]=0);byH.set(h,o)}const o=byH.get(h),w=wt(r)*r[3];o[prodOf(r)]+=w;o.t+=w});
@@ -426,7 +459,7 @@ function matrixData(rows){
 }
 function searchRows(rows,q){
   q=q.trim().toLowerCase();
-  return q?rows.filter(r=>[r[12],r[1],r[4],r[5],r[6],r[7],r[8],r[9],r[10],r[11]].join(' ').toLowerCase().includes(q)):rows;
+  return q?rows.filter(r=>[r[12],r[1],r[4],r[5],r[6],r[7],r[8],r[9],r[10],r[11],r[13],r[14]].join(' ').toLowerCase().includes(q)):rows;
 }
 
 /* ---------- static text ---------- */
@@ -464,7 +497,7 @@ function renderFilters(){
   if(st.hour!=null)$('hourChip').textContent=t('hour')+' '+hourLabel(st.hour);
 }
 function renderKpis(rows){
-  const k=kpiData(rows),cx=crossData(rows);
+  const k=kpiData(rows),cx=crossData(rows),bg=bigData(rows);
   const items=[
     [t('totalTrades'),fmt(k.trades),scoped()?t('sideTrade'):t('uniqueTrade')],
     [t('totalVol'),fmt(k.vol),t('lot')],
@@ -474,10 +507,12 @@ function renderKpis(rows){
     [t('activeTraders'),k.trd,t('uniqueUsers')],
     [t('peakHour'),k.ph==null?'-':hourLabel(k.ph).replace(/ \(\+\d+\)/,''),k.ph==null?'':fmt(k.pv)+' '+t('lot')],
     [t('crossKpi'),fmt(cx.trades),cx.trades?t('crossSub',{v:fmt(cx.vol),p:pct(cx.share),a:cx.accs.length}):t('crossNone'),'kpiCross'],
+    [t('bigKpi')+' ≥ '+st.big,fmt(bg.trades.length),bg.trades.length?t('bigSub',{v:fmt(bg.vol),p:pct(bg.share),a:bg.invCount}):t('bigNone',{n:st.big}),'kpiBig'],
   ];
   $('kpis').innerHTML=items.map((i,x)=>{const tag=(x===0||i[3])?'button':'div',id=x===0?'kpiTrades':i[3]||'';return `<${tag} class="kpi${tag==='button'?' click':''}${i[3]?' x':''}" ${id?`id="${id}"`:''}><div class="lbl">${i[0]}</div><div class="v num">${i[1]}</div><div class="n">${i[2]}</div></${tag}>`}).join('');
   $('kpiTrades').onclick=()=>$('detail').scrollIntoView({behavior:'smooth',block:'start'});
   $('kpiCross').onclick=()=>$('crossCard').scrollIntoView({behavior:'smooth',block:'start'});
+  $('kpiBig').onclick=()=>$('bigCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function renderBoards(rows){
   $('boards').innerHTML=DIMS.map(d=>{
@@ -570,6 +605,26 @@ function renderTable(rows){
   $('tbl').querySelectorAll('a.lk').forEach(a=>a.onclick=e=>{e.preventDefault();st[st.dim]=a.dataset.n;st.page=0;render();$('detail').scrollIntoView({behavior:'smooth',block:'start'})});
   $('tblNote').textContent=t('rankNote',{d:t(d.n),m:t(CN[st.metric]),abs:isNet?t('absNote'):'',n:list.length,t:total})+(d.own?t('priceNote'):t('netNote'));
 }
+function renderBig(rows){
+  const b=bigData(rows),tb=$('btbl'),LIM=200,m=st.bigMode;
+  $('bigSeg').innerHTML=[['trade','bigModeTrade'],['order','bigModeOrder'],['inv','bigModeInv']].map(([k,n])=>`<button aria-pressed="${m===k}" data-m="${k}">${t(n)}</button>`).join('');
+  $('bigSeg').querySelectorAll('button').forEach(x=>x.onclick=()=>{st.bigMode=x.dataset.m;renderBig(filtered())});
+  if($('bigMin')!==document.activeElement)$('bigMin').value=st.big;
+  const clk=s=>{const c=clock(s);return c.txt},th=a=>a.map(h=>`<th class="${h[1]?'':'tl'}" style="cursor:default">${h[0]}</th>`).join('');
+  let list,sum,head,body,cols;
+  if(m==='trade'){list=b.trades;sum=t('bigSumT',{n:fmt(list.length),m:b.min,v:fmt(b.vol),p:pct(b.share),a:b.invCount});
+    head=[[t('time')],['Trade ID'],[t('contract')],[t('price'),1],[t('vol'),1],[t('buyInv')],[t('sellInv')],[t('buyOrder')],[t('sellOrder')],['']];
+    body=list.slice(0,LIM).map(r=>`<tr class="clk" data-q="${r[12]}" style="cursor:pointer"><td class="tl num">${clk(r[0])}</td><td class="tl">${r[12]}</td><td class="tl">${r[1]}</td><td class="num">${fmtP(r[2])}</td><td class="num"><b>${r[3]}</b></td><td class="tl"><b>${r[5]}</b> · ${r[4]} / ${r[6]} / ${r[7]}</td><td class="tl"><b>${r[9]}</b> · ${r[8]} / ${r[10]} / ${r[11]}</td><td class="tl">${r[13]}</td><td class="tl">${r[14]}</td><td class="tl">${isCross(r)?'<span class="xbadge">CROSS</span>':''}</td></tr>`)}
+  else if(m==='order'){list=b.orders;const iv=new Set(list.map(o=>o.inv));sum=t('bigSumO',{n:fmt(list.length),m:b.min,v:fmt(list.reduce((a,o)=>a+o.vol,0)),a:iv.size});
+    head=[[t('orderId')],[t('sideC')],[t('invId')],[t('firmC')],[t('trdC')],[t('brkC')],[t('crossLots'),1],[t('fills'),1],[t('maxFill'),1],[t('insC')],[t('avgPx'),1],[t('span')]];
+    body=list.slice(0,LIM).map(o=>`<tr class="clk" data-q="${o.oid}" style="cursor:pointer"><td class="tl">${o.oid}</td><td class="tl ${o.side==='B'?'sidebuy':'sidesell'}">${t(o.side==='B'?'sideB':'sideS')}</td><td class="tl"><b>${o.inv}</b></td><td class="tl">${o.firm}</td><td class="tl">${o.trd}</td><td class="tl">${o.brk}</td><td class="num"><b>${fmt(o.vol)}</b></td><td class="num">${o.fills}</td><td class="num">${o.max}</td><td class="tl">${[...o.ins].map(e=>e[0]+' ('+e[1]+')').join(', ')}</td><td class="num">${fmtP(o.val/o.vol)}</td><td class="tl num">${clk(o.t0)}–${clk(o.t1)}</td></tr>`)}
+  else{list=b.invs;sum=t('bigSumI',{n:fmt(list.length),m:b.min});
+    head=[[t('invId')],[t('firmC')],[t('trdC')],[t('brkC')],[t('nOrders'),1],[t('buyLots'),1],[t('sellLots'),1],[t('crossLots'),1],[t('insC')]];
+    body=list.slice(0,LIM).map(i=>`<tr class="clk" data-q="${i.inv}" style="cursor:pointer"><td class="tl"><b>${i.inv}</b></td><td class="tl">${[...i.firms].join(', ')}</td><td class="tl">${[...i.trds].join(', ')}</td><td class="tl">${[...i.brks].join(', ')}</td><td class="num">${i.orders}</td><td class="num">${fmt(i.buy)}</td><td class="num">${fmt(i.sell)}</td><td class="num"><b>${fmt(i.buy+i.sell)}</b></td><td class="tl">${[...i.ins].join(', ')}</td></tr>`)}
+  $('bigSum').textContent=(list.length?sum:t('bigNone',{n:b.min}))+(list.length>LIM?' '+t('bigMore',{m:LIM,n:list.length}):'');
+  tb.innerHTML=`<thead><tr>${th(head)}</tr></thead><tbody>`+(body.join('')||`<tr><td colspan="${head.length}" style="text-align:center;color:var(--ink3);padding:16px">${t('bigNone',{n:b.min})}</td></tr>`)+`</tbody>`;
+  tb.querySelectorAll('tr[data-q]').forEach(r=>r.onclick=()=>{st.dq=r.dataset.q;$('dq').value=st.dq;st.page=0;render();$('detail').scrollIntoView({behavior:'smooth',block:'start'})});
+}
 function renderCross(rows){
   const c=crossData(rows),tb=$('xtbl'),LIM=30;
   $('crossSum').textContent=c.trades?t('crossSummary',{n:fmt(c.trades),v:fmt(c.vol),p:pct(c.share),a:c.accs.length})+(META.incons?t('inconsNote',{n:fmt(META.incons)}):''):t('crossNone')+(META.incons?t('inconsNote',{n:fmt(META.incons)}):'');
@@ -603,7 +658,7 @@ function renderDetail(rows){
 }
 function render(){
   const rows=filtered();
-  renderHeader(rows);renderFilters();renderKpis(rows);renderBoards(rows);renderHours();renderMix(rows);renderMatrix(rows);renderTable(rows);renderCross(rows);renderDetail(rows);
+  renderHeader(rows);renderFilters();renderKpis(rows);renderBoards(rows);renderHours();renderMix(rows);renderMatrix(rows);renderTable(rows);renderCross(rows);renderBig(rows);renderDetail(rows);
 }
 
 /* ---------- selects / data loading ---------- */
@@ -735,6 +790,10 @@ function exportXlsx(){
    A.push([]);A.push(['Trade ID',t('date'),t('time'),t('contract'),t('price'),t('vol'),t('accNo'),t('buyFirm'),t('buyBroker'),t('buyTrader'),t('sellFirm'),t('sellBroker'),t('sellTrader'),t('buyOrder'),t('sellOrder')]);
    c.x.slice().sort((p,q)=>p[0]-q[0]).forEach(r=>{const cl=clock(r[0]);A.push([r[12],dayIso(cl.d),cl.txt,r[1],r[2],r[3],r[5],r[4],r[7],r[6],r[8],r[11],r[10],r[13],r[14]])});
    sheet(A,'Cross Trade',[16,12,10,28,22,22,16,12,12,16,12,12,16,16,16]);}
+  {const b=bigData(rows),H=['Trade ID',t('date'),t('time'),t('contract'),t('price'),t('vol'),t('buyInv'),t('buyFirm'),t('buyBroker'),t('buyTrader'),t('sellInv'),t('sellFirm'),t('sellBroker'),t('sellTrader'),t('buyOrder'),t('sellOrder')];
+   sheet([[t('bigTitle')+' ≥ '+b.min+' '+t('lot')],H,...b.trades.map(r=>{const cl=clock(r[0]);return [r[12],dayIso(cl.d),cl.txt,r[1],r[2],r[3],r[5],r[4],r[7],r[6],r[9],r[8],r[11],r[10],r[13],r[14]]})],'Trade Besar',[16,12,10,22,10,8,16,10,10,14,16,10,10,14,16,16]);
+   sheet([[t('bigTitle')+' ≥ '+b.min+' '+t('lot')],[t('orderId'),t('sideC'),t('invId'),t('firmC'),t('trdC'),t('brkC'),t('crossLots'),t('fills'),t('maxFill'),t('insC'),t('avgPx'),t('span')],...b.orders.map(o=>[o.oid,o.side==='B'?t('sideB'):t('sideS'),o.inv,o.firm,o.trd,o.brk,o.vol,o.fills,o.max,[...o.ins].map(e=>e[0]+' ('+e[1]+')').join(', '),Math.round(o.val/o.vol*10000)/10000,clock(o.t0).txt+'-'+clock(o.t1).txt])],'Order Besar',[18,8,16,10,14,10,10,8,10,32,12,18]);
+   sheet([[t('bigTitle')+' ≥ '+b.min+' '+t('lot')],[t('invId'),t('firmC'),t('trdC'),t('brkC'),t('nOrders'),t('buyLots'),t('sellLots'),t('crossLots'),t('insC')],...b.invs.map(i=>[i.inv,[...i.firms].join(', '),[...i.trds].join(', '),[...i.brks].join(', '),i.orders,i.buy,i.sell,i.buy+i.sell,[...i.ins].join(', ')])],'Investor Besar',[16,16,20,14,10,10,10,10,32]);}
   for(const d of DIMS){const r=rankSheet(d.k,rows);sheet([r.head,...r.body],t(d.n),[8,26,...r.cols.map(()=>13)])}
   const byH=hourData(filtered(true));const hrows=[];
   for(let h=H0;h<=H1;h++){const o=byH.get(h);hrows.push([dayIso(Math.floor(h/24)),String(((h%24)+24)%24).padStart(2,'0')+':00',...PRODUCTS.map(p=>o?o[p]:0),o?o.t:0])}
@@ -793,6 +852,9 @@ function exportPdf(){
   /* cross trade */
   {const c=crossData(rows);title(t('crossTitle'));doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(90,100,115);doc.text(c.trades?t('crossSummary',{n:fmt(c.trades),v:fmt(c.vol),p:pct(c.share),a:c.accs.length}):t('crossNone'),M,y);y+=10;
    if(c.accs.length)tbl([t('accNo'),t('crossTrades'),t('crossLots'),t('crossContracts'),t('crossBuyVia'),t('crossSellVia')],c.accs.slice(0,30).map(o=>[o.acc,fmt(o.trades),fmt(o.vol),[...o.ins].map(e=>e[0]+' ('+e[1]+')').join(', '),[...o.buy].join(', '),[...o.sell].join(', ')]))}
+  /* large trade/order */
+  {const b=bigData(rows);title(t('bigTitle')+' ≥ '+b.min+' '+t('lot'));doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(90,100,115);doc.text(b.orders.length||b.trades.length?t('bigSumT',{n:fmt(b.trades.length),m:b.min,v:fmt(b.vol),p:pct(b.share),a:b.invCount}):t('bigNone',{n:b.min}),M,y);y+=10;
+   if(b.orders.length)tbl([t('orderId'),t('sideC'),t('invId'),t('firmC'),t('trdC'),t('brkC'),t('crossLots'),t('fills'),t('insC')],b.orders.slice(0,40).map(o=>[o.oid,o.side==='B'?t('sideB'):t('sideS'),o.inv,o.firm,o.trd,o.brk,fmt(o.vol),o.fills,[...o.ins].map(e=>e[0]+' ('+e[1]+')').join(', ')]));}
   /* detail */
   const det=detailRows(rows),LIM=1000,shown=det.slice(0,LIM);
   doc.addPage();y=M;title(t('detailTitle'));
@@ -832,6 +894,7 @@ $('q').oninput=e=>{st.q=e.target.value;renderTable(filtered())};
 $('selIns').onchange=e=>{st.ins=e.target.value;if(st.ins)st.prod=st.ins.split('-')[0];st.page=0;render()};
 $('selBrk').onchange=e=>{st.brk=e.target.value;st.page=0;render()};
 $('selFirm').onchange=e=>{st.firm=e.target.value;st.page=0;render()};
+$('bigMin').onchange=e=>{const v=Math.max(1,Math.floor(+e.target.value)||10);st.big=v;try{localStorage.setItem('mam-big',v)}catch(x){}render()};
 $('btnCross').onclick=()=>{st.cross=!st.cross;st.page=0;render()};
 $('resetAll').onclick=()=>{Object.assign(st,{prod:'ALL',ins:'',firm:'',brk:'',side:'ALL',hour:null,dq:'',q:'',page:0,cross:false});$('dq').value='';$('q').value='';render()};
 $('dq').oninput=e=>{st.dq=e.target.value;st.page=0;renderDetail(filtered())};
