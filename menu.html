@@ -40,8 +40,7 @@
             flex-wrap: wrap;
         }
         .menu-btn {
-            flex: 1;
-            min-width: 150px;
+            flex: 1 1 200px;
             padding: 20px;
             font-size: 16px;
             font-weight: bold;
@@ -52,6 +51,7 @@
             transition: transform 0.2s, background 0.3s;
             text-decoration: none;
             display: block;
+            box-sizing: border-box;
         }
         .btn-m1 { background: #007bff; }
         .btn-m1:hover { background: #0056b3; transform: scale(1.05); }
@@ -61,6 +61,9 @@
 
         .btn-m3 { background: #fd7e14; }
         .btn-m3:hover { background: #e8590c; transform: scale(1.05); }
+
+        .btn-m4 { background: #6f42c1; }
+        .btn-m4:hover { background: #59359a; transform: scale(1.05); }
 
         .logout-link {
             display: inline-block;
@@ -83,6 +86,7 @@
         <a href="m1/index.html" class="menu-btn btn-m1">Akses Dashboard M1</a>
         <a href="m2/index.html" class="menu-btn btn-m2">Akses Dashboard M2</a>
         <a href="m3/index.html" class="menu-btn btn-m3">Akses Dashboard M3</a>
+        <a href="m4/index.html" class="menu-btn btn-m4">Akses Dashboard M4</a>
     </div>
 
     <a onclick="logout()" class="logout-link">← Keluar / Log Out</a>
