@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Market Control Center - Menu</title>
+
     <!-- SCRIPT PROTEKSI LOGIN UNTUK menu.html -->
-<script>
-  if (localStorage.getItem('mcc_session') !== 'aktif') {
-    window.location.replace('index.html'); 
-  }
-</script>
+    <script>
+        if (localStorage.getItem('mcc_session') !== 'aktif') {
+            window.location.replace('index.html');
+        }
+    </script>
 
     <style>
         body {
@@ -18,8 +19,10 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .menu-container {
             background: #ffffff;
@@ -31,8 +34,14 @@
             width: 100%;
             box-sizing: border-box;
         }
-        h2 { color: #333; margin-bottom: 10px; }
-        p { color: #777; margin-bottom: 30px; }
+        h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #777;
+            margin-bottom: 30px;
+        }
         .button-group {
             display: flex;
             gap: 15px;
@@ -55,7 +64,7 @@
         }
         .btn-m1 { background: #007bff; }
         .btn-m1:hover { background: #0056b3; transform: scale(1.05); }
-        
+
         .btn-m2 { background: #28a745; }
         .btn-m2:hover { background: #218838; transform: scale(1.05); }
 
@@ -64,6 +73,12 @@
 
         .btn-m4 { background: #6f42c1; }
         .btn-m4:hover { background: #59359a; transform: scale(1.05); }
+
+        .btn-m5 { background: #17a2b8; }
+        .btn-m5:hover { background: #138496; transform: scale(1.05); }
+
+        .btn-m6 { background: #e83e8c; }
+        .btn-m6:hover { background: #c82368; transform: scale(1.05); }
 
         .logout-link {
             display: inline-block;
@@ -77,27 +92,25 @@
     </style>
 </head>
 <body>
-
-<div class="menu-container">
-    <h2>Market Control Center</h2>
-    <p>Intelligent Dash:</p>
-    
-    <div class="button-group">
-        <a href="m1/index.html" class="menu-btn btn-m1">Dashboard M1</a>
-        <a href="m2/index.html" class="menu-btn btn-m2">Dashboard M2</a>
-        <a href="m3/index.html" class="menu-btn btn-m3">Dashboard M3</a>
-        <a href="m4/index.html" class="menu-btn btn-m4">Dashboard M4</a>
+    <div class="menu-container">
+        <h2>Market Control Center</h2>
+        <p>Intelligent Dash:</p>
+        <div class="button-group">
+            <a href="m1/index.html" class="menu-btn btn-m1">Dashboard M1</a>
+            <a href="m2/index.html" class="menu-btn btn-m2">Dashboard M2</a>
+            <a href="m3/index.html" class="menu-btn btn-m3">Dashboard M3</a>
+            <a href="m4/index.html" class="menu-btn btn-m4">Dashboard M4</a>
+            <a href="m5/index.html" class="menu-btn btn-m5">Dashboard M5</a>
+            <a href="m6/index.html" class="menu-btn btn-m6">Dashboard M6</a>
+        </div>
+        <a onclick="logout()" class="logout-link">← Keluar / Log Out</a>
     </div>
 
-    <a onclick="logout()" class="logout-link">← Keluar / Log Out</a>
-</div>
-
-<script>
-    function logout() {
-        localStorage.removeItem('mcc_session'); // Hapus kunci akses
-        window.location.href = 'index.html';
-    }
-</script>
-
+    <script>
+        function logout() {
+            localStorage.removeItem('mcc_session'); // Hapus kunci akses
+            window.location.href = 'index.html';
+        }
+    </script>
 </body>
 </html>
