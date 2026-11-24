@@ -13,100 +13,333 @@
     </script>
 
     <style>
+        :root {
+            /* Default: Skin 1 - Dark Terminal */
+            --bg-page: #0b0f17;
+            --bg-gradient: radial-gradient(circle at top center, #162033 0%, #0b0f17 70%);
+            --card-bg: #111827;
+            --card-border: rgba(255, 255, 255, 0.08);
+            --card-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+            --text-title: #f8fafc;
+            --text-sub: #94a3b8;
+            --btn-bg: #1e293b;
+            --btn-border: rgba(255, 255, 255, 0.08);
+            --btn-text: #f1f5f9;
+            --btn-hover-bg: #263349;
+            --btn-hover-border: #38bdf8;
+            --badge-bg: rgba(56, 189, 248, 0.14);
+            --badge-text: #38bdf8;
+            --switcher-bg: rgba(255, 255, 255, 0.05);
+            --switcher-active: #38bdf8;
+            --switcher-active-text: #0b0f17;
+            --divider: rgba(255, 255, 255, 0.08);
+            --logout-color: #f87171;
+        }
+
+        /* SKIN 2: BURGUNDY GLASS */
+        body[data-skin="burgundy"] {
+            --bg-page: #1a030c;
+            --bg-gradient: linear-gradient(135deg, #1a030c 0%, #3d081b 50%, #580c25 100%);
+            --card-bg: rgba(45, 7, 21, 0.65);
+            --card-border: rgba(244, 114, 182, 0.25);
+            --card-shadow: 0 24px 50px rgba(15, 2, 7, 0.65);
+            --text-title: #fff1f2;
+            --text-sub: #fecdd3;
+            --btn-bg: rgba(255, 255, 255, 0.07);
+            --btn-border: rgba(251, 207, 232, 0.22);
+            --btn-text: #fff1f2;
+            --btn-hover-bg: rgba(225, 29, 72, 0.28);
+            --btn-hover-border: #fda4af;
+            --badge-bg: rgba(253, 164, 175, 0.18);
+            --badge-text: #fda4af;
+            --switcher-bg: rgba(0, 0, 0, 0.25);
+            --switcher-active: #fda4af;
+            --switcher-active-text: #2d0715;
+            --divider: rgba(253, 164, 175, 0.18);
+            --logout-color: #fda4af;
+        }
+
+        /* SKIN 3: CLEAN ENTERPRISE LIGHT */
+        body[data-skin="light"] {
+            --bg-page: #f1f5f9;
+            --bg-gradient: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            --card-bg: #ffffff;
+            --card-border: #e2e8f0;
+            --card-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+            --text-title: #0f172a;
+            --text-sub: #64748b;
+            --btn-bg: #f8fafc;
+            --btn-border: #e2e8f0;
+            --btn-text: #1e293b;
+            --btn-hover-bg: #ffffff;
+            --btn-hover-border: #2563eb;
+            --badge-bg: #dbeafe;
+            --badge-text: #1d4ed8;
+            --switcher-bg: #f1f5f9;
+            --switcher-active: #2563eb;
+            --switcher-active-text: #ffffff;
+            --divider: #e2e8f0;
+            --logout-color: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f7f6;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-page);
+            background-image: var(--bg-gradient);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
             padding: 20px;
-            box-sizing: border-box;
+            transition: background 0.35s ease, color 0.35s ease;
         }
-        .menu-container {
-            background: #ffffff;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 600px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-        h2 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        p {
-            color: #777;
-            margin-bottom: 30px;
-        }
-        .button-group {
+
+        /* Skin Switcher Bar */
+        .skin-bar {
             display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
+            gap: 8px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 6px;
+            border-radius: 999px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(12px);
         }
-        .menu-btn {
-            flex: 1 1 200px;
-            padding: 20px;
-            font-size: 16px;
-            font-weight: bold;
-            color: white;
+
+        .skin-btn {
             border: none;
-            border-radius: 8px;
+            background: transparent;
+            color: var(--text-sub);
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s, background 0.3s;
-            text-decoration: none;
-            display: block;
-            box-sizing: border-box;
+            transition: all 0.25s ease;
         }
-        .btn-m1 { background: #007bff; }
-        .btn-m1:hover { background: #0056b3; transform: scale(1.05); }
 
-        .btn-m2 { background: #28a745; }
-        .btn-m2:hover { background: #218838; transform: scale(1.05); }
+        .skin-btn:hover {
+            color: var(--text-title);
+        }
 
-        .btn-m3 { background: #fd7e14; }
-        .btn-m3:hover { background: #e8590c; transform: scale(1.05); }
+        .skin-btn.active {
+            background: var(--switcher-active);
+            color: var(--switcher-active-text);
+        }
 
-        .btn-m4 { background: #6f42c1; }
-        .btn-m4:hover { background: #59359a; transform: scale(1.05); }
+        /* Main Container */
+        .menu-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 36px 32px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            text-align: center;
+            max-width: 640px;
+            width: 100%;
+            transition: all 0.35s ease;
+        }
 
-        .btn-m5 { background: #17a2b8; }
-        .btn-m5:hover { background: #138496; transform: scale(1.05); }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: var(--badge-text);
+            background: var(--badge-bg);
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-bottom: 14px;
+        }
 
-        .btn-m6 { background: #e83e8c; }
-        .btn-m6:hover { background: #c82368; transform: scale(1.05); }
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        h2 {
+            color: var(--text-title);
+            margin: 0 0 6px 0;
+            font-size: 26px;
+            letter-spacing: -0.3px;
+        }
+
+        p {
+            color: var(--text-sub);
+            margin: 0 0 28px 0;
+            font-size: 14px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 14px;
+        }
+
+        .menu-btn {
+            background: var(--btn-bg);
+            border: 1px solid var(--btn-border);
+            color: var(--btn-text);
+            padding: 18px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-align: left;
+            transition: transform 0.2s ease, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+
+        .menu-btn:hover {
+            background: var(--btn-hover-bg);
+            border-color: var(--btn-hover-border);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+        }
+
+        .btn-code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 9px;
+            border-radius: 8px;
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            flex-shrink: 0;
+        }
+
+        /* Aksen warna kategori halus pada badge di mode Light */
+        body[data-skin="light"] .btn-m1 .btn-code { background: #dbeafe; color: #1d4ed8; }
+        body[data-skin="light"] .btn-m2 .btn-code { background: #dcfce7; color: #15803d; }
+        body[data-skin="light"] .btn-m3 .btn-code { background: #ffedd5; color: #c2410c; }
+        body[data-skin="light"] .btn-m4 .btn-code { background: #f3e8ff; color: #7e22ce; }
+        body[data-skin="light"] .btn-m5 .btn-code { background: #cffafe; color: #0e7490; }
+        body[data-skin="light"] .btn-m6 .btn-code { background: #fce7f3; color: #be185d; }
+
+        .btn-label {
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .footer-divider {
+            height: 1px;
+            background: var(--divider);
+            margin: 28px 0 20px 0;
+        }
 
         .logout-link {
             display: inline-block;
-            margin-top: 30px;
-            color: #dc3545;
+            color: var(--logout-color);
             text-decoration: none;
             font-size: 14px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: opacity 0.2s ease, background 0.2s ease;
+        }
+
+        .logout-link:hover {
+            opacity: 0.85;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        @media (max-width: 540px) {
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+            .menu-container {
+                padding: 28px 20px;
+            }
+            .skin-bar {
+                flex-wrap: wrap;
+                justify-content: center;
+                border-radius: 14px;
+            }
         }
     </style>
 </head>
-<body>
+<body data-skin="dark">
+
+    <!-- PILIHAN 3 SKIN -->
+    <div class="skin-bar" role="group" aria-label="Pilih Tema Tampilan">
+        <button type="button" class="skin-btn active" data-target="dark" onclick="setSkin('dark')">1. Dark Terminal</button>
+        <button type="button" class="skin-btn" data-target="burgundy" onclick="setSkin('burgundy')">2. Burgundy Glass</button>
+        <button type="button" class="skin-btn" data-target="light" onclick="setSkin('light')">3. Clean Light</button>
+    </div>
+
     <div class="menu-container">
+        <div class="status-pill">
+            <span class="status-dot"></span> System Online
+        </div>
         <h2>Market Control Center</h2>
         <p>Intelligent Dash:</p>
+
         <div class="button-group">
-            <a href="m1/index.html" class="menu-btn btn-m1">Dashboard M1</a>
-            <a href="m2/index.html" class="menu-btn btn-m2">Dashboard M2</a>
-            <a href="m3/index.html" class="menu-btn btn-m3">Dashboard M3</a>
-            <a href="m4/index.html" class="menu-btn btn-m4">Dashboard M4</a>
-            <a href="m5/index.html" class="menu-btn btn-m5">Dashboard M5</a>
-            <a href="m6/index.html" class="menu-btn btn-m6">Dashboard M6</a>
+            <a href="m1/index.html" class="menu-btn btn-m1">
+                <span class="btn-code">M1</span>
+                <span class="btn-label">Market Data</span>
+            </a>
+            <a href="m2/index.html" class="menu-btn btn-m2">
+                <span class="btn-code">M2</span>
+                <span class="btn-label">Market Activity Monitor</span>
+            </a>
+            <a href="m3/index.html" class="menu-btn btn-m3">
+                <span class="btn-code">M3</span>
+                <span class="btn-label">OHLCV</span>
+            </a>
+            <a href="m4/index.html" class="menu-btn btn-m4">
+                <span class="btn-code">M4</span>
+                <span class="btn-label">Risk Limit</span>
+            </a>
+            <a href="m5/index.html" class="menu-btn btn-m5">
+                <span class="btn-code">M5</span>
+                <span class="btn-label">Notional Value</span>
+            </a>
+            <a href="m6/index.html" class="menu-btn btn-m6">
+                <span class="btn-code">M6</span>
+                <span class="btn-label">Working Order</span>
+            </a>
         </div>
-        <a onclick="logout()" class="logout-link">← Keluar / Log Out</a>
+
+        <div class="footer-divider"></div>
+        <a onclick="logout()" class="logout-link">← Monggo Matursuwuun / Log Out</a>
     </div>
 
     <script>
+        function setSkin(skinName) {
+            document.body.setAttribute('data-skin', skinName);
+            localStorage.setItem('mcc_skin', skinName);
+
+            document.querySelectorAll('.skin-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.getAttribute('data-target') === skinName);
+            });
+        }
+
+        // Muat skin terakhir yang dipilih pengguna
+        (function initSkin() {
+            const savedSkin = localStorage.getItem('mcc_skin');
+            if (savedSkin && ['dark', 'burgundy', 'light'].includes(savedSkin)) {
+                setSkin(savedSkin);
+            }
+        })();
+
         function logout() {
             localStorage.removeItem('mcc_session'); // Hapus kunci akses
             window.location.href = 'index.html';
