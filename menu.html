@@ -29,7 +29,6 @@
             --btn-hover-border: #38bdf8;
             --badge-bg: rgba(56, 189, 248, 0.14);
             --badge-text: #38bdf8;
-            --switcher-bg: rgba(255, 255, 255, 0.05);
             --switcher-active: #38bdf8;
             --switcher-active-text: #0b0f17;
             --divider: rgba(255, 255, 255, 0.08);
@@ -52,7 +51,6 @@
             --btn-hover-border: #fda4af;
             --badge-bg: rgba(253, 164, 175, 0.18);
             --badge-text: #fda4af;
-            --switcher-bg: rgba(0, 0, 0, 0.25);
             --switcher-active: #fda4af;
             --switcher-active-text: #2d0715;
             --divider: rgba(253, 164, 175, 0.18);
@@ -75,7 +73,6 @@
             --btn-hover-border: #2563eb;
             --badge-bg: #dbeafe;
             --badge-text: #1d4ed8;
-            --switcher-bg: #f1f5f9;
             --switcher-active: #2563eb;
             --switcher-active-text: #ffffff;
             --divider: #e2e8f0;
@@ -91,7 +88,6 @@
             background-color: var(--bg-page);
             background-image: var(--bg-gradient);
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -100,29 +96,34 @@
             transition: background 0.35s ease, color 0.35s ease;
         }
 
-        /* Skin Switcher Bar */
+        /* Skin Switcher Bar - Pojok Kanan Atas */
         .skin-bar {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
             display: flex;
-            gap: 8px;
+            gap: 4px;
             background: var(--card-bg);
             border: 1px solid var(--card-border);
-            padding: 6px;
+            padding: 5px;
             border-radius: 999px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
             backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .skin-btn {
             border: none;
             background: transparent;
             color: var(--text-sub);
-            padding: 7px 14px;
+            padding: 6px 12px;
             border-radius: 999px;
-            font-size: 12px;
+            font-size: 11.5px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.25s ease;
+            white-space: nowrap;
         }
 
         .skin-btn:hover {
@@ -260,28 +261,35 @@
             background: rgba(239, 68, 68, 0.1);
         }
 
-        @media (max-width: 540px) {
+        @media (max-width: 600px) {
+            body {
+                padding-top: 72px;
+            }
+            .skin-bar {
+                top: 12px;
+                right: 12px;
+                padding: 4px;
+            }
+            .skin-btn {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
             .button-group {
                 grid-template-columns: 1fr;
             }
             .menu-container {
                 padding: 28px 20px;
             }
-            .skin-bar {
-                flex-wrap: wrap;
-                justify-content: center;
-                border-radius: 14px;
-            }
         }
     </style>
 </head>
 <body data-skin="dark">
 
-    <!-- PILIHAN 3 SKIN -->
+    <!-- PILIHAN SKIN DI POJOK KANAN ATAS -->
     <div class="skin-bar" role="group" aria-label="Pilih Tema Tampilan">
-        <button type="button" class="skin-btn active" data-target="dark" onclick="setSkin('dark')">1. Dark Terminal</button>
-        <button type="button" class="skin-btn" data-target="burgundy" onclick="setSkin('burgundy')">2. Burgundy Glass</button>
-        <button type="button" class="skin-btn" data-target="light" onclick="setSkin('light')">3. Clean Light</button>
+        <button type="button" class="skin-btn active" data-target="dark" onclick="setSkin('dark')">Dark Terminal</button>
+        <button type="button" class="skin-btn" data-target="burgundy" onclick="setSkin('burgundy')">Burgundy Glass</button>
+        <button type="button" class="skin-btn" data-target="light" onclick="setSkin('light')">Clean Light</button>
     </div>
 
     <div class="menu-container">
@@ -319,7 +327,7 @@
         </div>
 
         <div class="footer-divider"></div>
-        <a onclick="logout()" class="logout-link">← Monggo Matursuwuun / Log Out</a>
+        <a onclick="logout()" class="logout-link">← Keluar / Log Out</a>
     </div>
 
     <script>
