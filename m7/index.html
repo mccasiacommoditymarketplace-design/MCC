@@ -1,0 +1,362 @@
+<!-- SCRIPT PROTEKSI LOGIN -->
+<script>
+  if (localStorage.getItem('mcc_session') !== 'aktif') {
+    window.location.href = '../index.html';
+  }
+</script>
+
+
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LevelCut Monitor</title>
+<style>
+:root{--bg:#0e1621;--pn:#151f2e;--pn2:#1b2738;--ln:#263449;--tx:#e6edf5;--mu:#8a9bb2;--ac:#f5a524;--hd:#1f3350;--hdt:#e6edf5;--act:#111;--gn:#2fbf71;--rd:#ef5350;--yl:#f5a524}
+:root[data-theme=light]{--bg:#f3f5f8;--pn:#fff;--pn2:#eef2f7;--ln:#d5dce6;--tx:#17212f;--mu:#5d6c80;--ac:#c77700;--hd:#dfe8f4;--hdt:#17212f;--act:#fff;--gn:#1b8a4b;--rd:#c62828;--yl:#b36b00}
+:root[data-theme=green]{--bg:#eef1ee;--pn:#fff;--pn2:#f1f5f0;--ln:#cfd9cd;--tx:#1b2a1b;--mu:#5a6b5a;--ac:#2e7d32;--hd:#2e7d32;--hdt:#fff;--act:#fff;--hb:#2e7d32;--hbt:#fff;--gn:#2e7d32;--rd:#c62828;--yl:#b36b00}
+:root[data-theme=burgundy]{--bg:#f4eeee;--pn:#fff;--pn2:#f6eded;--ln:#dccaca;--tx:#2a1717;--mu:#755a5a;--ac:#8c1c2c;--hd:#8c1c2c;--hdt:#fff;--act:#fff;--hb:#8c1c2c;--hbt:#fff;--gn:#2e7d32;--rd:#c62828;--yl:#b36b00}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.45 "Segoe UI",system-ui,Arial,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;background:var(--hb,var(--pn));color:var(--hbt,var(--tx));border-bottom:1px solid var(--ln);position:sticky;top:0;z-index:30}
+h1{font-size:16px;margin:0 12px 0 0}h1 small{opacity:.75;font-weight:400;margin-left:8px;font-size:12px}
+button,select,input,textarea{font:inherit;color:var(--tx);background:var(--pn2);border:1px solid var(--ln);border-radius:5px;padding:5px 9px}
+button{cursor:pointer}button:hover{border-color:var(--ac)}
+button.pri{background:var(--ac);color:var(--act);border-color:var(--ac);font-weight:600}
+:root[data-theme=green] header button.pri,:root[data-theme=burgundy] header button.pri{background:#fff;color:var(--hb);border-color:#fff}
+.sp{flex:1}
+nav{display:flex;gap:2px;padding:0 16px;background:var(--pn);border-bottom:1px solid var(--ln);overflow:auto}
+nav button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:9px 14px;color:var(--mu);white-space:nowrap}
+nav button.on{color:var(--ac);border-bottom-color:var(--ac)}
+main{padding:14px 16px}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.k{background:var(--pn);border:1px solid var(--ln);border-radius:7px;padding:9px 12px}.k span{color:var(--mu);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px}.k b{display:block;font-size:19px;margin:2px 0}.k i{font-style:normal;color:var(--mu);font-size:11.5px}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:12px;margin-bottom:12px;align-items:start}
+.card{background:var(--pn);border:1px solid var(--ln);border-radius:7px;padding:10px 12px;min-width:0;margin-bottom:12px}
+.g2 .card{margin-bottom:0}
+.card h3{margin:0 0 8px;font-size:13px;color:var(--mu);text-transform:uppercase;letter-spacing:.4px}
+.tw{overflow:auto;max-height:68vh;border:1px solid var(--ln);border-radius:6px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:4px 9px;border-bottom:1px solid var(--ln);white-space:nowrap;text-align:right}
+th{background:var(--hd);color:var(--hdt);position:sticky;top:0;z-index:2}
+th.l,td.l{text-align:left}
+tr.lk{cursor:pointer}tr.lk:hover td{background:var(--pn2)}
+tr.tot td{font-weight:700;background:var(--pn2)}tr.gt td{font-weight:800;background:var(--hd);color:var(--hdt)}
+tr.cut td{background:rgba(239,83,80,.16)}
+.neg{color:var(--rd)}.pos{color:var(--gn)}
+.bd{display:inline-block;border-radius:4px;padding:1px 8px;font-weight:700;font-size:11.5px;color:#fff}
+.bd.OK{background:var(--gn)}.bd.MC{background:var(--yl)}.bd.CUT{background:var(--rd)}.bd.NA{background:var(--mu)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0}
+.row label{color:var(--mu);font-size:12px;display:flex;gap:5px;align-items:center}
+.note{color:var(--mu);font-size:12px}
+.warn{background:rgba(245,165,36,.13);border:1px solid var(--ac);border-radius:6px;padding:6px 10px;margin:6px 0}
+input.n{width:110px;text-align:right}input.w{width:150px}
+.rb{position:relative;height:14px;background:var(--pn2);border:1px solid var(--ln);border-radius:7px;min-width:110px;overflow:hidden}
+.rb i{position:absolute;left:0;top:0;bottom:0}.rb u{position:absolute;top:0;bottom:0;width:2px;background:var(--tx);opacity:.55}
+.st td{padding:3px 9px}.st td:first-child{text-align:left;color:var(--mu)}
+.st tr.em td{font-weight:700;border-top:2px solid var(--ln);background:var(--pn2)}
+.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:70}
+.modal.on{display:flex}.modal>div{background:var(--pn);border:1px solid var(--ln);border-radius:8px;padding:16px;max-width:600px;width:94%;max-height:88vh;overflow:auto}
+.dz{border:2px dashed var(--ln);border-radius:8px;padding:20px;text-align:center;color:var(--mu);margin:8px 0;cursor:pointer}.dz.over{border-color:var(--ac);color:var(--ac)}
+</style>
+</head>
+<body>
+<header>
+  <h1 data-t="LevelCut">LevelCut<small data-t="Monitor equity & level cut">Monitor equity & level cut</small></h1>
+  <button class="pri" id="bPos" data-t="Import Posisi">Import Posisi</button>
+  <input type="file" id="fPos" multiple accept=".xls,.xlsx,.csv,.txt" style="display:none">
+  <span class="sp"></span>
+  <button id="bXls">Excel</button><button id="bPdf">PDF</button>
+  <select id="lang"><option value="id">ID</option><option value="en">EN</option></select>
+  <select id="theme"><option value="green" data-t="Hijau ACM">Hijau ACM</option><option value="burgundy" data-t="Burgundi">Burgundi</option><option value="dark" data-t="Gelap">Gelap</option><option value="light" data-t="Terang">Terang</option></select>
+</header>
+<nav id="nav"></nav>
+<main id="main"></main>
+<div class="modal" id="modal"><div id="mbody"></div></div>
+<input type="file" id="fGen" accept=".xls,.xlsx,.csv,.txt" style="display:none">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+/* ================= konfigurasi ================= */
+const PRODS=['2SO','G10','NCP','NG1','NPT','NSI','NRC'];
+const DEF={theme:'green',lang:'id',cut:30,mc:100,target:100,basis:'dt',ord:'fl',agg:true,
+  size:{'2SO':30000,G10:10,NCP:1000,NG1:1,NPT:5,NSI:100,NRC:1},div:{'2SO':100},tick:{'2SO':0.01,G10:0.1,NCP:0.0005,NG1:0.1,NPT:0.1,NSI:0.005,NRC:1},
+  mpl:{},rate:0};
+let CFG=JSON.parse(JSON.stringify(DEF));
+let POS=[],LED=[],ACC={},PRICE={};
+const S={tab:'mon',pa:'',cm:'',view:'pa',q:''};
+const LTYPES=[['dep','Deposit (Margin In)'],['wd','Withdrawal (Margin Out)'],['adjc','Adjustment Credit'],['adjd','Adjustment Debit'],['comm','Commission'],['int','Interest'],['pl','Profit / Loss (realised)']];
+const ORDS=[['fl','Floating terkecil dulu (rugi terbesar)'],['fh','Floating terbesar dulu'],['lot','Lot terbesar dulu'],['mg','Margin terbesar dulu'],['ct','Kontrak A–Z']];
+/* ================= i18n ================= */
+const EN={'Monitor equity & level cut':'Equity & cut level monitor','Import Posisi':'Import Positions','Hijau ACM':'ACM Green','Burgundi':'Burgundy','Gelap':'Dark','Terang':'Light','Monitor':'Monitor','Statement':'Statement','Posisi':'Positions','Harga Referensi':'Reference Prices','Ledger':'Ledger','Pengaturan':'Settings','Akun':'Account','Per PA':'By PA','Per CM':'By CM','Semua':'All','Cari':'Search','Saldo':'Balance','Floating':'Floating','Equity':'Equity','Margin Req':'Margin Req','Eff Margin':'Eff Margin','EQT Ratio':'EQT Ratio','Status':'Status','Buffer ke cut':'Buffer to cut','Akun dipantau':'Accounts monitored','Total Equity':'Total Equity','Total Floating':'Total Floating','Margin Call':'Margin Call','Level Cut':'Cut level','Belum ada data. Klik Import Posisi, atau tambah posisi manual di tab Posisi.':'No data yet. Click Import Positions, or add a position manually in the Positions tab.','Previous Balance':'Previous Balance','Margin In':'Margin In','Margin Out':'Margin Out','Commission':'Commission','Interest':'Interest','Adjustment':'Adjustment','Profit / Loss':'Profit / Loss','New Balance':'New Balance','Margin Req DT':'Margin Req DT','Margin Req ON':'Margin Req ON','Eff Mar DT':'Eff Mar DT','Eff Mar ON':'Eff Mar ON','Open Position':'Open Position','Item':'Item','Lot':'Lot','BS':'BS','Price':'Price','Reff Price':'Reff Price','% Floating':'% Floating','Urutan unrealise':'Unrealised order','Floating terkecil dulu (rugi terbesar)':'Smallest floating first (largest loss)','Floating terbesar dulu':'Largest floating first','Lot terbesar dulu':'Largest lots first','Margin terbesar dulu':'Largest margin first','Kontrak A–Z':'Contract A–Z','Gabung per kontrak':'Group by contract','Per transaksi':'Per trade','Rekomendasi cut':'Cut recommendation','Target ratio setelah cut':'Target ratio after cut','Cut lot':'Cut lots','Margin setelah':'Margin after','Ratio setelah':'Ratio after','Tidak perlu cut: ratio di atas level.':'No cut needed: ratio is above the level.','Per produk':'By product','Per kontrak':'By contract','Produk':'Product','Kontrak':'Contract','Long':'Long','Short':'Short','Net':'Net','Tambah posisi manual':'Add manual position','Tambah':'Add','Hapus':'Delete','Harga terakhir':'Last price','Spread (tick)':'Spread (ticks)','Harga Buy':'Buy price','Harga Sell':'Sell price','Sumber':'Source','Template':'Template','Import massal':'Bulk import','Isi dari SettPrice posisi':'Fill from positions SettPrice','Posisi long dinilai di harga Sell (bid), posisi short di harga Buy (ask) — sama seperti sheet LevelCut.':'Long positions are marked at Sell (bid), short at Buy (ask) — same as the LevelCut sheet.','Tipe':'Type','Jumlah':'Amount','Tanggal':'Date','Catatan':'Note','Simpan':'Save','Level cut (EQT ratio % ≤)':'Cut level (EQT ratio % ≤)','Level margin call (EQT ratio % <)':'Margin call level (EQT ratio % <)','Ratio dihitung terhadap margin':'Ratio uses margin','Margin per lot (USD)':'Margin per lot (USD)','Ukuran kontrak':'Contract size','Pembagi harga':'Price divisor','Tick':'Tick','Hapus semua data':'Delete all data','Backup data':'Backup data','Restore data':'Restore data','Hasil import':'Import result','Tutup':'Close','posisi':'positions','akun':'accounts','Harga belum ada untuk kontrak:':'No reference price for contracts:','Margin otomatis (lot × margin/lot) — isi di Pengaturan':'Auto margin (lots × margin/lot) — fill in Settings','manual':'manual','otomatis':'auto','CM / Broker':'CM / Broker','Jumlah akun':'Accounts','Lot total':'Total lots','Kolom wajib belum ditemukan':'Required columns not found','Seret file atau klik':'Drop a file or click','Unduh template':'Download template','Posisi (file)':'Positions (file)','Prev. Balance':'Prev. Balance','Hapus posisi':'Delete position','Total':'Total','Margin dipakai':'Margin basis','Tambah akun':'Add account','Ledger akun':'Account ledger','Posisi dari file menggantikan posisi file lama pada akun yang sama; posisi manual tetap.':'File positions replace the old file positions of the same account; manual positions stay.','Rasio':'Ratio','Equity ≤ 0 : cut semua':'Equity ≤ 0: cut all','Manual':'Manual','Auto':'Auto','Rate USD/IDR (opsional)':'USD/IDR rate (optional)','Equity (IDR)':'Equity (IDR)','Ratio equity ÷ margin. Cut saat ≤ level cut, margin call saat < level MC.':'Equity ÷ margin ratio. Cut when ≤ cut level, margin call when < MC level.','Ekspor Excel gagal (library belum termuat — perlu internet).':'Excel export failed (library not loaded — internet needed).','Ekspor PDF gagal (library belum termuat — perlu internet).':'PDF export failed (library not loaded — internet needed).'};
+const L=()=>CFG.lang,t=s=>L()==='en'&&EN[s]!==undefined?EN[s]:s;
+function applyLang(){document.querySelectorAll('[data-t]').forEach(e=>{const tx=t(e.dataset.t);if(e.firstChild&&e.firstChild.nodeType===3)e.firstChild.nodeValue=tx;else if(!e.children.length)e.textContent=tx})}
+/* ================= util ================= */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const loc=()=>L()==='en'?'en-US':'id-ID';
+const f0=x=>new Intl.NumberFormat(loc(),{maximumFractionDigits:0}).format(Math.round(x||0));
+const f2=x=>new Intl.NumberFormat(loc(),{minimumFractionDigits:2,maximumFractionDigits:2}).format(x||0);
+const fp=x=>x==null||!isFinite(x)?'—':new Intl.NumberFormat(loc(),{minimumFractionDigits:1,maximumFractionDigits:1}).format(x*100)+'%';
+const sg=x=>'<span class="'+(x<0?'neg':x>0?'pos':'')+'">'+f2(x)+'</span>';
+function prodOf(ins){const m=/^F-[A-Z]+-([A-Z0-9]+)-(\d{6})$/.exec(ins);return m?m[1]:(ins.split('-')[2]||ins)}
+const tickOf=ins=>CFG.tick[prodOf(ins)]||0.01;
+const decOf=tk=>Math.min(6,Math.max(0,Math.ceil(-Math.log10(tk)-1e-9)));
+function showModal(h){$('#mbody').innerHTML=h;$('#modal').classList.add('on')}
+function closeModal(){$('#modal').classList.remove('on')}
+function msg(title,lines){showModal('<h3 style="margin-top:0">'+esc(title)+'</h3><pre style="white-space:pre-wrap;font:12px Consolas,monospace;max-height:55vh;overflow:auto">'+esc(lines.join('\n'))+'</pre><button class="pri" id="mc">'+t('Tutup')+'</button>');$('#mc').onclick=closeModal}
+function dl(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'text/csv'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+/* ================= IndexedDB ================= */
+let IDBP=null;
+function idb(){if(IDBP)return IDBP;IDBP=new Promise((ok,no)=>{try{const r=indexedDB.open('lc-store',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}});return IDBP}
+async function kvGet(k){try{const d=await idb();return await new Promise((ok,no)=>{const q=d.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)})}catch(e){return undefined}}
+async function kvSet(k,v){try{const d=await idb();await new Promise((ok,no)=>{const tx=d.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=ok;tx.onerror=()=>no(tx.error)})}catch(e){}}
+const saveAll=()=>Promise.all([kvSet('cfg',CFG),kvSet('pos',POS),kvSet('led',LED),kvSet('acc',ACC),kvSet('price',PRICE)]);
+let CC=null;function dirty(){CC=null}
+async function commit(){dirty();await saveAll();render()}
+/* ================= baca file ================= */
+function parseCSV(tx){tx=tx.replace(/^﻿/,'');const first=tx.split(/\r?\n/,1)[0];const dl_=[',',';','\t'].map(c=>[c,first.split(c).length]).sort((a,b)=>b[1]-a[1])[0][0];
+  const rows=[];let r=[],c='',q=false;
+  for(let i=0;i<tx.length;i++){const ch=tx[i];if(q){if(ch==='"'){if(tx[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}else if(ch==='"')q=true;else if(ch===dl_){r.push(c);c=''}else if(ch==='\n'){r.push(c);rows.push(r);r=[];c=''}else if(ch!=='\r')c+=ch}
+  if(c!==''||r.length){r.push(c);rows.push(r)}return rows}
+async function readRows(f){const n=f.name.toLowerCase();if(/\.(csv|txt)$/.test(n))return parseCSV(await f.text());
+  if(!window.XLSX)throw new Error('SheetJS belum termuat (perlu internet) — simpan sebagai CSV lalu import ulang.');
+  const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:true,defval:''})}
+const nz=s=>String(s==null?'':s).toLowerCase().replace(/[^a-z0-9]/g,'');
+function mapHdr(rows,spec,min){ // spec {field:[aliases]} -> {hi, mp}
+  let best=null;for(let i=0;i<Math.min(rows.length,30);i++){const idx={};rows[i].forEach((h,j)=>{const k=nz(h);if(k&&idx[k]===undefined)idx[k]=j});const mp={};
+    for(const f in spec){for(const a of spec[f]){if(idx[a]!==undefined){mp[f]=idx[a];break}}}
+    const sc=Object.keys(mp).length;if(!best||sc>best.sc)best={hi:i,mp,sc}}
+  return best&&best.sc>=min?best:null}
+const num=v=>{if(typeof v==='number')return v;const s=String(v==null?'':v).trim().replace(/\s/g,'');if(s==='')return NaN;return +(s.includes(',')&&!s.includes('.')?s.replace(',','.'):s.replace(/,/g,''))};
+const dstr=v=>{if(v==null||v==='')return '';const s=String(v).trim();let m=/^(\d{4})-?(\d{2})-?(\d{2})/.exec(s);if(m)return m[1]+'-'+m[2]+'-'+m[3];m=/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})/.exec(s);if(m)return m[3]+'-'+m[2]+'-'+m[1];if(typeof v==='number'&&v>40000&&v<80000)return new Date(Date.UTC(1899,11,30)+Math.floor(v)*864e5).toISOString().slice(0,10);return s};
+/* ---- posisi ---- */
+const PSPEC={pa:['positionaccount','investorid','subaccount','account','accountid','pa'],cm:['clearingmemberaccountnumber','brokerid','tradingaccountnumber','cm','broker','tradingaccount'],ins:['instrumentid','instrument','contractticker','contract'],code:['clearingcode','commodity','product','symbol','productcode'],exp:['contractexpiry','expiry','maturity','contractmonth'],price:['price','tradeprice','entryprice','openprice'],side:['buysell','bs','side'],lot:['amount','lot','lots','volume','qty','quantity'],sett:['settprice','settlementprice','refprice'],size:['commoditysize','contractsize'],tid:['tradeentryid','tradeid'],td:['tradedate']};
+function sideOf(v){const s=String(v).trim().toLowerCase();if(/^(b|buy|long|1)/.test(s))return 'B';if(/^(s|sell|short|2)/.test(s))return 'S';return ''}
+async function importPositions(files){
+  const lines=[];let all=[];
+  for(const f of files){let rows;try{rows=await readRows(f)}catch(e){lines.push(f.name+': '+e.message);continue}
+    const h=mapHdr(rows,PSPEC,4);if(!h||h.mp.price===undefined||h.mp.side===undefined||h.mp.lot===undefined||(h.mp.ins===undefined&&(h.mp.code===undefined||h.mp.exp===undefined))){lines.push(f.name+': '+t('Kolom wajib belum ditemukan')+' (Instrument/ClearingCode+Expiry, Price, Buy/Sell, Amount)');continue}
+    const g=(r,k)=>h.mp[k]===undefined?'':r[h.mp[k]];let n=0;
+    for(let i=h.hi+1;i<rows.length;i++){const r=rows[i];
+      const ins=h.mp.ins!==undefined&&String(g(r,'ins')).trim()?String(g(r,'ins')).trim():'F-XACM-'+String(g(r,'code')).trim()+'-'+String(g(r,'exp')).trim();
+      const price=num(g(r,'price')),lot=num(g(r,'lot'));let side=sideOf(g(r,'side'));
+      if(!/^F-/.test(ins)||isNaN(price)||isNaN(lot)||lot===0||!side)continue;
+      all.push({id:'f'+Date.now()+'_'+all.length,pa:String(g(r,'pa')).trim()||'—',cm:String(g(r,'cm')).trim(),ins,side,lot:Math.abs(lot),price,sp:isNaN(num(g(r,'sett')))?null:num(g(r,'sett')),sz:num(g(r,'size'))||null,src:'file',td:dstr(g(r,'td')),tid:String(g(r,'tid')).trim()});n++}
+    lines.push(f.name+': '+f0(n)+' '+t('posisi'))}
+  if(all.length){const pas=new Set(all.map(p=>p.pa));POS=POS.filter(p=>!(p.src==='file'&&pas.has(p.pa)));POS.push(...all);
+    for(const p of all){const a=ACC[p.pa]||(ACC[p.pa]={pa:p.pa,cm:'',prev:0,mr:{dt:null,on:null}});if(!a.cm&&p.cm)a.cm=p.cm;
+      if(p.sp!=null&&!(PRICE[p.ins]&&PRICE[p.ins].src==='manual'))PRICE[p.ins]={last:p.sp,sp:(PRICE[p.ins]||{}).sp||0,src:'sett'}}
+    if(!S.pa||!ACC[S.pa])S.pa=[...pas][0];
+    lines.push([...pas].length+' '+t('akun')+' · '+t('Posisi dari file menggantikan posisi file lama pada akun yang sama; posisi manual tetap.'))}
+  await commit();msg(t('Hasil import'),lines)}
+/* ---- harga ---- */
+const HSPEC={ins:['instrumentid','instrument','contractticker','contract','ticker'],last:['price','lastprice','last','settprice','settlementprice','referenceprice','refprice'],sp:['spread','spreadtick','spreadticks']};
+async function importPrices(f){try{const rows=await readRows(f);const h=mapHdr(rows,HSPEC,2);if(!h||h.mp.ins===undefined||h.mp.last===undefined){msg(t('Harga Referensi'),[t('Kolom wajib belum ditemukan')+' (Instrument Id, Price)']);return}
+  let n=0;for(let i=h.hi+1;i<rows.length;i++){const r=rows[i];const ins=String(r[h.mp.ins]).trim(),p=num(r[h.mp.last]);if(!/^F-/.test(ins)||isNaN(p))continue;const sp=h.mp.sp!==undefined&&!isNaN(num(r[h.mp.sp]))?num(r[h.mp.sp]):((PRICE[ins]||{}).sp||0);PRICE[ins]={last:p,sp,src:'import'};n++}
+  await commit();msg(t('Harga Referensi'),[n+' '+t('Kontrak').toLowerCase()])}catch(e){msg('Error',[e.message])}}
+/* ---- ledger ---- */
+const LSPEC={pa:['positionaccount','investorid','subaccount','account','accountid','pa'],type:['type','jenis','tipe','transaction'],amt:['amount','jumlah','nilai','value'],date:['date','tanggal','tradedate'],note:['note','catatan','remark','keterangan']};
+function ltype(v){const s=nz(v);if(/prev|opening|saldoawal|previousbalance/.test(s))return 'prev';if(/withdraw|marginout|wd|penarikan|tarik/.test(s))return 'wd';if(/deposit|marginin|dep|setor/.test(s))return 'dep';if(/adj.*cred|^credit|cr$|adjcr/.test(s))return 'adjc';if(/adj.*deb|^debit|dr$|adjdr/.test(s))return 'adjd';if(/comm|fee|komisi/.test(s))return 'comm';if(/interest|bunga/.test(s))return 'int';if(/^pl|profit|loss|realis/.test(s))return 'pl';return ''}
+async function importLedger(f){try{const rows=await readRows(f);const h=mapHdr(rows,LSPEC,3);if(!h||h.mp.pa===undefined||h.mp.type===undefined||h.mp.amt===undefined){msg(t('Ledger'),[t('Kolom wajib belum ditemukan')+' (Account, Type, Amount)']);return}
+  let n=0,bad=0;for(let i=h.hi+1;i<rows.length;i++){const r=rows[i];const pa=String(r[h.mp.pa]).trim(),ty=ltype(r[h.mp.type]),amt=num(r[h.mp.amt]);if(!pa)continue;if(!ty||isNaN(amt)){bad++;continue}
+    const a=ACC[pa]||(ACC[pa]={pa,cm:'',prev:0,mr:{dt:null,on:null}});
+    if(ty==='prev'){a.prev=amt;n++;continue}
+    LED.push({id:'l'+Date.now()+'_'+n,pa,type:ty,amt:ty==='pl'?amt:Math.abs(amt),date:h.mp.date!==undefined?dstr(r[h.mp.date]):'',note:h.mp.note!==undefined?String(r[h.mp.note]):''});n++}
+  await commit();msg(t('Ledger'),[n+' OK'+(bad?' · '+bad+' ?':'')])}catch(e){msg('Error',[e.message])}}
+/* ================= perhitungan ================= */
+function refPx(ins,side){const r=PRICE[ins];if(!r||!(r.last>0))return null;const half=(r.sp||0)/2*tickOf(ins);return side==='B'?r.last-half:r.last+half}
+function posPL(p){const pr=prodOf(p.ins),sz=CFG.size[pr]||p.sz||1,dv=CFG.div[pr]||1,ref=refPx(p.ins,p.side);if(ref==null)return {ref:null,pl:0};return {ref,pl:(p.side==='B'?1:-1)*(ref-p.price)*p.lot*sz/dv}}
+const mplOf=(ins,k)=>((CFG.mpl[prodOf(ins)]||{})[k])||0;
+function calc(){
+  if(CC)return CC;const out={};const miss=new Set();
+  const pas=new Set([...Object.keys(ACC),...POS.map(p=>p.pa),...LED.map(l=>l.pa)]);
+  for(const pa of pas){const a=ACC[pa]||(ACC[pa]={pa,cm:'',prev:0,mr:{dt:null,on:null}});if(!a.mr)a.mr={dt:null,on:null};
+    const ps=POS.filter(p=>p.pa===pa).map(p=>{const r=posPL(p);if(r.ref==null)miss.add(p.ins);return Object.assign({},p,{ref:r.ref,pl:r.pl,mdt:p.lot*mplOf(p.ins,'dt'),mon:p.lot*mplOf(p.ins,'on')})});
+    const ls=LED.filter(l=>l.pa===pa);const sm={dep:0,wd:0,adjc:0,adjd:0,comm:0,int:0,pl:0};for(const l of ls)sm[l.type]+=l.amt;
+    const adj=sm.adjc-sm.adjd,nb=(+a.prev||0)+sm.dep-sm.wd-sm.comm-sm.int+adj+sm.pl,fl=ps.reduce((x,p)=>x+p.pl,0),eq=nb+fl;
+    const lots=ps.reduce((x,p)=>x+p.lot,0);
+    const mr=k=>{const m=a.mr[k];return m!=null&&m!==''&&!isNaN(+m)?+m:ps.reduce((x,p)=>x+p['m'+k],0)};
+    const mdt=mr('dt'),mon=mr('on'),mb=CFG.basis==='on'?mon:mdt,ratio=mb>0?eq/mb:null;
+    let status='OK';if(eq<=0&&(ps.length||mb>0))status='CUT';else if(ratio!=null){if(ratio<=CFG.cut/100)status='CUT';else if(ratio<CFG.mc/100)status='MC'}else if(!ps.length)status='NA';
+    out[pa]={a,pa,cm:a.cm||'',ps,sm,adj,nb,fl,eq,mdt,mon,mb,effdt:eq-mdt,effon:eq-mon,ratio,status,lots,buf:mb>0?eq-CFG.cut/100*mb:null,manual:{dt:a.mr.dt!=null&&a.mr.dt!=='',on:a.mr.on!=null&&a.mr.on!==''}}}
+  CC={acc:out,miss};return CC}
+function sortPos(rows){const o=CFG.ord;const key={fl:(a,b)=>a.pl-b.pl,fh:(a,b)=>b.pl-a.pl,lot:(a,b)=>b.lot-a.lot,mg:(a,b)=>(b.mdt||b.mon)-(a.mdt||a.mon),ct:(a,b)=>a.ins<b.ins?-1:a.ins>b.ins?1:(a.side<b.side?-1:1)}[o]||((a,b)=>a.pl-b.pl);return rows.slice().sort(key)}
+function aggPos(ps){const m=new Map();for(const p of ps){const k=p.ins+'|'+p.side;let g=m.get(k);if(!g){g=Object.assign({},p,{lot:0,pl:0,mdt:0,mon:0,n:0,pxsum:0});m.set(k,g)}g.lot+=p.lot;g.pl+=p.pl;g.mdt+=p.mdt;g.mon+=p.mon;g.n++;g.pxsum+=p.price*p.lot}
+  return [...m.values()].map(g=>{g.price=g.pxsum/g.lot;return g})}
+function viewRows(c){return sortPos(CFG.agg?aggPos(c.ps):c.ps)}
+function cutPlan(c,rows){ // rows sorted; returns {rows:[{..,cut}],k,after}
+  const out=rows.map(r=>Object.assign({},r,{cut:0}));if(!(c.mb>0)||c.ratio==null)return {rows:out,need:false};
+  const tg=CFG.target/100;if(c.ratio>=tg&&c.eq>0)return {rows:out,need:false,ok:true};
+  const totLots=c.lots||1;let m=c.mb,cl=0;
+  const mper=r=>{const k=CFG.basis==='on'?r.mon:r.mdt;const a=c.a.mr[CFG.basis==='on'?'on':'dt'];const manual=a!=null&&a!==''&&!isNaN(+a);return manual?c.mb/totLots:(r.lot?k/r.lot:0)};
+  for(const r of out){if(c.eq>0&&m<=c.eq/tg+1e-9)break;const mp=mper(r);
+    if(c.eq<=0){r.cut=r.lot;m-=mp*r.lot;cl+=r.lot;continue}
+    const need=m-c.eq/tg;const n=mp>0?Math.min(r.lot,Math.ceil(need/mp-1e-9)):r.lot;r.cut=n;m-=mp*n;cl+=n}
+  return {rows:out,need:true,after:m,ratio:m>0?c.eq/m:null,cutLots:cl}}
+/* ================= UI ================= */
+const TABS=[['mon','Monitor'],['stm','Statement'],['pos','Posisi'],['px','Harga Referensi'],['led','Ledger'],['set','Pengaturan']];
+function renderNav(){$('#nav').innerHTML=TABS.map(x=>'<button data-tab="'+x[0]+'" class="'+(S.tab===x[0]?'on':'')+'">'+t(x[1])+'</button>').join('');document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()})}
+const bdg=s=>'<span class="bd '+s+'">'+s+'</span>';
+function ratioBar(r){if(r==null)return '—';const w=Math.max(0,Math.min(r,2))/2*100,col=r<=CFG.cut/100?'var(--rd)':r<CFG.mc/100?'var(--yl)':'var(--gn)';return '<div class="rb" title="'+fp(r)+'"><i style="width:'+w+'%;background:'+col+'"></i><u style="left:'+CFG.cut/200*100+'%"></u><u style="left:'+CFG.mc/200*100+'%"></u></div>'}
+function k_(a,b,c){return '<div class="k"><span>'+a+'</span><b>'+b+'</b><i>'+(c||'')+'</i></div>'}
+function cmAgg(accs){const m=new Map();for(const c of accs){const k=c.cm||'—';let g=m.get(k);if(!g){g={pa:k,cm:k,nb:0,fl:0,eq:0,mdt:0,mon:0,lots:0,n:0,ps:[],accs:[]};m.set(k,g)}g.nb+=c.nb;g.fl+=c.fl;g.eq+=c.eq;g.mdt+=c.mdt;g.mon+=c.mon;g.lots+=c.lots;g.n++;g.accs.push(c)}
+  return [...m.values()].map(g=>{g.mb=CFG.basis==='on'?g.mon:g.mdt;g.ratio=g.mb>0?g.eq/g.mb:null;g.buf=g.mb>0?g.eq-CFG.cut/100*g.mb:null;g.effdt=g.eq-g.mdt;g.effon=g.eq-g.mon;
+    g.status=g.eq<=0&&g.mb>0?'CUT':g.ratio==null?'OK':g.ratio<=CFG.cut/100?'CUT':g.ratio<CFG.mc/100?'MC':'OK';return g})}
+function tMon(){
+  const C=calc(),all=Object.values(C.acc);
+  if(!all.length)return '<div class="dz" id="dz">'+t('Belum ada data. Klik Import Posisi, atau tambah posisi manual di tab Posisi.')+'</div>';
+  let rows=S.view==='cm'?cmAgg(all):all.slice();
+  const q=S.q.trim().toLowerCase();if(q)rows=rows.filter(r=>(r.pa+' '+r.cm).toLowerCase().includes(q));
+  if(S.cm&&S.view==='pa')rows=rows.filter(r=>r.cm===S.cm);
+  rows.sort((a,b)=>(a.ratio==null?9e9:a.ratio)-(b.ratio==null?9e9:b.ratio));
+  const cms=[...new Set(all.map(c=>c.cm))].filter(Boolean).sort();
+  const tot=rows.reduce((a,r)=>(a.eq+=r.eq,a.fl+=r.fl,a.mb+=r.mb,a),{eq:0,fl:0,mb:0});
+  let x='';if(C.miss.size)x+='<div class="warn">⚠ '+t('Harga belum ada untuk kontrak:')+' '+[...C.miss].join(', ')+'</div>';
+  x+='<div class="kp">'+k_(t('Akun dipantau'),f0(rows.length),f0(rows.reduce((a,r)=>a+r.lots,0))+' lot')+k_(t('Total Equity'),f2(tot.eq),'')+k_(t('Total Floating'),sg(tot.fl),'')+k_(t('Margin Call'),f0(rows.filter(r=>r.status==='MC').length),'< '+CFG.mc+'%')+k_(t('Level Cut'),f0(rows.filter(r=>r.status==='CUT').length),'≤ '+CFG.cut+'%')+'</div>';
+  x+='<div class="row"><button data-v="pa" class="'+(S.view==='pa'?'pri':'')+'">'+t('Per PA')+'</button><button data-v="cm" class="'+(S.view==='cm'?'pri':'')+'">'+t('Per CM')+'</button><label>'+t('CM / Broker')+' <select id="sCm"><option value="">'+t('Semua')+'</option>'+cms.map(c=>'<option'+(c===S.cm?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select></label><input id="sQ" placeholder="'+t('Cari')+'…" value="'+esc(S.q)+'"><span class="note">'+t('Ratio equity ÷ margin. Cut saat ≤ level cut, margin call saat < level MC.')+'</span></div>';
+  x+='<div class="tw"><table><tr><th class="l">'+(S.view==='cm'?'CM':t('Akun'))+'</th><th class="l">CM</th><th>Lot</th><th>'+t('Saldo')+'</th><th>'+t('Floating')+'</th><th>'+t('Equity')+'</th><th>'+t('Margin Req')+'</th><th>'+t('Eff Margin')+'</th><th>'+t('EQT Ratio')+'</th><th></th><th>'+t('Buffer ke cut')+'</th><th>'+t('Status')+'</th></tr>';
+  for(const r of rows)x+='<tr class="lk'+(r.status==='CUT'?' cut':'')+'" data-pa="'+esc(r.pa)+'"><td class="l"><b>'+esc(r.pa)+'</b></td><td class="l">'+esc(r.cm)+(S.view==='cm'?' ('+r.n+')':'')+'</td><td>'+f0(r.lots)+'</td><td>'+f2(r.nb)+'</td><td>'+sg(r.fl)+'</td><td><b>'+f2(r.eq)+'</b></td><td>'+f2(r.mb)+'</td><td>'+sg(CFG.basis==='on'?r.effon:r.effdt)+'</td><td><b>'+fp(r.ratio)+'</b></td><td style="width:120px">'+ratioBar(r.ratio)+'</td><td>'+(r.buf==null?'—':sg(r.buf))+'</td><td>'+bdg(r.status)+'</td></tr>';
+  x+='</table></div>';return x}
+function tStm(){
+  const C=calc(),all=Object.values(C.acc);if(!all.length)return '<div class="note">'+t('Belum ada data. Klik Import Posisi, atau tambah posisi manual di tab Posisi.')+'</div>';
+  if(!C.acc[S.pa])S.pa=all[0].pa;const c=C.acc[S.pa],a=c.a,rows=viewRows(c),plan=cutPlan(c,rows);
+  const inp=(id,val,ph)=>'<input class="n" id="'+id+'" value="'+(val==null?'':val)+'" placeholder="'+(ph||'')+'">';
+  let x='<div class="row"><label>'+t('Akun')+' <select id="sPa">'+all.sort((p,q)=>p.pa<q.pa?-1:1).map(r=>'<option'+(r.pa===S.pa?' selected':'')+' value="'+esc(r.pa)+'">'+esc(r.pa)+(r.cm?' · '+esc(r.cm):'')+'</option>').join('')+'</select></label>'+
+   '<label>'+t('Urutan unrealise')+' <select id="sOrd">'+ORDS.map(o=>'<option value="'+o[0]+'"'+(CFG.ord===o[0]?' selected':'')+'>'+t(o[1])+'</option>').join('')+'</select></label>'+
+   '<label><input type="checkbox" id="sAgg"'+(CFG.agg?' checked':'')+'> '+t('Gabung per kontrak')+'</label></div>';
+  x+='<div class="g2"><div class="card"><h3>'+t('Statement')+' — '+esc(c.pa)+' '+bdg(c.status)+'</h3><table class="st">'+
+   '<tr><td>'+t('Previous Balance')+'</td><td>'+inp('iPrev',a.prev)+'</td></tr>'+
+   '<tr><td>'+t('Margin In')+'</td><td>'+f2(c.sm.dep)+'</td></tr><tr><td>'+t('Margin Out')+'</td><td>'+f2(c.sm.wd)+'</td></tr><tr><td>'+t('Commission')+'</td><td>'+f2(c.sm.comm)+'</td></tr><tr><td>'+t('Interest')+'</td><td>'+f2(c.sm.int)+'</td></tr><tr><td>'+t('Adjustment')+'</td><td>'+sg(c.adj)+'</td></tr><tr><td>'+t('Profit / Loss')+'</td><td>'+sg(c.sm.pl)+'</td></tr>'+
+   '<tr class="em"><td>'+t('New Balance')+'</td><td>'+f2(c.nb)+'</td></tr><tr><td>'+t('Floating')+'</td><td>'+sg(c.fl)+'</td></tr><tr class="em"><td>'+t('Equity')+'</td><td>'+f2(c.eq)+'</td></tr>'+
+   '<tr><td>'+t('Margin Req DT')+' <span class="note">('+(c.manual.dt?t('manual'):t('otomatis'))+')</span></td><td>'+inp('iMdt',c.manual.dt?a.mr.dt:'',f2(c.mdt))+'</td></tr><tr><td>'+t('Margin Req ON')+' <span class="note">('+(c.manual.on?t('manual'):t('otomatis'))+')</span></td><td>'+inp('iMon',c.manual.on?a.mr.on:'',f2(c.mon))+'</td></tr>'+
+   '<tr><td>'+t('Eff Mar DT')+'</td><td>'+sg(c.effdt)+'</td></tr><tr><td>'+t('Eff Mar ON')+'</td><td>'+sg(c.effon)+'</td></tr><tr class="em"><td>'+t('EQT Ratio')+' ('+CFG.basis.toUpperCase()+')</td><td>'+fp(c.ratio)+'</td></tr><tr><td>'+t('Buffer ke cut')+' ('+CFG.cut+'%)</td><td>'+(c.buf==null?'—':sg(c.buf))+'</td></tr></table>'+
+   '<div style="margin-top:8px">'+ratioBar(c.ratio)+'</div>'+(c.mdt===0&&c.mon===0?'<div class="note">'+t('Margin otomatis (lot × margin/lot) — isi di Pengaturan')+'</div>':'')+
+   '<div class="row"><label>CM <input class="w" id="iCm" value="'+esc(a.cm)+'"></label></div></div>';
+  // cut recommendation
+  x+='<div class="card"><h3>'+t('Rekomendasi cut')+'</h3>';
+  if(!plan.need)x+='<div class="note">'+t('Tidak perlu cut: ratio di atas level.')+'</div>';
+  else{x+='<div class="row"><label>'+t('Target ratio setelah cut')+' (%) <input class="n" id="iTg" value="'+CFG.target+'" style="width:70px"></label></div><div class="note">'+(c.eq<=0?t('Equity ≤ 0 : cut semua')+' · ':'')+t('Cut lot')+': <b>'+f0(plan.cutLots)+'</b> / '+f0(c.lots)+' · '+t('Margin setelah')+': '+f2(plan.after)+' · '+t('Ratio setelah')+': <b>'+fp(plan.ratio)+'</b></div>'+
+    '<div class="tw" style="max-height:300px;margin-top:6px"><table><tr><th class="l">'+t('Item')+'</th><th>BS</th><th>Lot</th><th>'+t('Floating')+'</th><th>'+t('Cut lot')+'</th></tr>'+plan.rows.filter(r=>r.cut>0).map(r=>'<tr class="cut"><td class="l">'+esc(r.ins.replace('F-XACM-',''))+'</td><td>'+r.side+'</td><td>'+f0(r.lot)+'</td><td>'+sg(r.pl)+'</td><td><b>'+f0(r.cut)+'</b></td></tr>').join('')+'</table></div>'}
+  x+='<div class="note" style="margin-top:6px">'+t('Urutan unrealise')+': '+t(ORDS.find(o=>o[0]===CFG.ord)[1])+'</div></div></div>';
+  // positions
+  const totPl=rows.reduce((s,r)=>s+r.pl,0);
+  x+='<div class="card"><h3>'+t('Open Position')+' — '+f0(rows.length)+'</h3><div class="tw"><table><tr><th>No</th><th class="l">'+t('Item')+'</th><th>Lot</th><th>BS</th><th>'+t('Price')+'</th><th>'+t('Reff Price')+'</th><th>'+t('Floating')+'</th><th>'+t('% Floating')+'</th><th>'+t('Cut lot')+'</th></tr>';
+  rows.forEach((r,i)=>{const dec=decOf(tickOf(r.ins)),cl=(plan.rows[i]||{}).cut||0;x+='<tr class="'+(cl?'cut':'')+'"><td>'+(i+1)+'</td><td class="l">'+esc(r.ins)+(CFG.agg&&r.n>1?' <span class="note">×'+r.n+'</span>':'')+'</td><td>'+f0(r.lot)+'</td><td>'+r.side+'</td><td>'+r.price.toFixed(dec+1)+'</td><td>'+(r.ref==null?'<span class="neg">—</span>':r.ref.toFixed(dec+1))+'</td><td>'+sg(r.pl)+'</td><td>'+(totPl?fp(r.pl/Math.abs(totPl)):'')+'</td><td>'+(cl?'<b>'+f0(cl)+'</b>':'')+'</td></tr>'});
+  x+='<tr class="gt"><td></td><td class="l">'+t('Total')+'</td><td>'+f0(c.lots)+'</td><td></td><td></td><td></td><td>'+f2(totPl)+'</td><td></td><td>'+(plan.need?f0(plan.cutLots):'')+'</td></tr></table></div></div>';
+  return x}
+function summ(ps,by){const m=new Map();for(const p of ps){const k=by==='pr'?prodOf(p.ins):p.ins;let g=m.get(k);if(!g){g={k,l:0,s:0,pl:0,n:0};m.set(k,g)}if(p.side==='B')g.l+=p.lot;else g.s+=p.lot;g.pl+=p.pl;g.n++}return [...m.values()].sort((a,b)=>a.pl-b.pl)}
+function tPos(){
+  const C=calc(),all=Object.values(C.acc);let ps=[];for(const c of all)if(!S.cm||c.cm===S.cm)ps.push(...c.ps.map(p=>Object.assign({},p,{cm:c.cm})));
+  const cms=[...new Set(all.map(c=>c.cm))].filter(Boolean).sort(),pas=all.map(c=>c.pa).sort();
+  let x='<div class="row"><label>'+t('CM / Broker')+' <select id="sCm"><option value="">'+t('Semua')+'</option>'+cms.map(c=>'<option'+(c===S.cm?' selected':'')+'>'+esc(c)+'</option>').join('')+'</select></label><button id="bPosImp">'+t('Import Posisi')+'</button><button id="bPosTpl">'+t('Unduh template')+'</button></div>';
+  x+='<div class="card"><h3>'+t('Tambah posisi manual')+'</h3><div class="row"><label>'+t('Akun')+' <input class="w" id="mPa" list="dlPa" value="'+esc(S.pa)+'"><datalist id="dlPa">'+pas.map(p=>'<option>'+esc(p)+'</option>').join('')+'</datalist></label><label>'+t('Kontrak')+' <input class="w" id="mIns" list="dlIns" placeholder="F-XACM-NSI-202612"><datalist id="dlIns">'+[...new Set([...Object.keys(PRICE),...POS.map(p=>p.ins)])].sort().map(i=>'<option>'+i+'</option>').join('')+'</datalist></label><label>BS <select id="mSd"><option>B</option><option>S</option></select></label><label>Lot <input class="n" id="mLot" style="width:70px"></label><label>'+t('Price')+' <input class="n" id="mPx"></label><button class="pri" id="mAdd">'+t('Tambah')+'</button></div></div>';
+  const ps2=summ(ps,'pr'),ct=summ(ps,'ct');
+  const tb=(h,rows)=>'<div class="card"><h3>'+h+'</h3><div class="tw" style="max-height:300px"><table><tr><th class="l">'+t('Kontrak')+'</th><th>'+t('Long')+'</th><th>'+t('Short')+'</th><th>'+t('Net')+'</th><th>'+t('Floating')+'</th></tr>'+rows.map(g=>'<tr><td class="l">'+esc(g.k)+'</td><td>'+f0(g.l)+'</td><td>'+f0(g.s)+'</td><td>'+f0(g.l-g.s)+'</td><td>'+sg(g.pl)+'</td></tr>').join('')+'<tr class="gt"><td class="l">'+t('Total')+'</td><td>'+f0(rows.reduce((a,g)=>a+g.l,0))+'</td><td>'+f0(rows.reduce((a,g)=>a+g.s,0))+'</td><td></td><td>'+f2(rows.reduce((a,g)=>a+g.pl,0))+'</td></tr></table></div></div>';
+  x+='<div class="g2">'+tb(t('Per produk'),ps2)+tb(t('Per kontrak'),ct)+'</div>';
+  const so=sortPos(ps);
+  x+='<div class="row"><label>'+t('Urutan unrealise')+' <select id="sOrd">'+ORDS.map(o=>'<option value="'+o[0]+'"'+(CFG.ord===o[0]?' selected':'')+'>'+t(o[1])+'</option>').join('')+'</select></label></div><div class="tw"><table><tr><th class="l">'+t('Akun')+'</th><th class="l">CM</th><th class="l">'+t('Item')+'</th><th>BS</th><th>Lot</th><th>'+t('Price')+'</th><th>'+t('Reff Price')+'</th><th>'+t('Floating')+'</th><th class="l">'+t('Sumber')+'</th><th></th></tr>'+
+   so.slice(0,600).map(p=>'<tr><td class="l">'+esc(p.pa)+'</td><td class="l">'+esc(p.cm)+'</td><td class="l">'+esc(p.ins)+'</td><td>'+p.side+'</td><td>'+f0(p.lot)+'</td><td>'+p.price+'</td><td>'+(p.ref==null?'—':+p.ref.toFixed(6))+'</td><td>'+sg(p.pl)+'</td><td class="l">'+(p.src==='file'?t('Posisi (file)'):'manual')+'</td><td><button data-del="'+p.id+'" title="'+t('Hapus posisi')+'">✕</button></td></tr>').join('')+'</table></div>'+(so.length>600?'<div class="note">600 / '+so.length+'</div>':'');
+  return x}
+function tPx(){
+  const inss=[...new Set([...Object.keys(PRICE),...POS.map(p=>p.ins)])].sort();
+  let x='<div class="row"><button id="pTpl">'+t('Unduh template')+'</button><button id="pImp" class="pri">'+t('Import massal')+'</button><button id="pSett">'+t('Isi dari SettPrice posisi')+'</button></div><div class="note">'+t('Posisi long dinilai di harga Sell (bid), posisi short di harga Buy (ask) — sama seperti sheet LevelCut.')+'</div>';
+  x+='<div class="tw" style="margin-top:8px"><table><tr><th class="l">'+t('Kontrak')+'</th><th>'+t('Harga terakhir')+'</th><th>'+t('Spread (tick)')+'</th><th>'+t('Harga Buy')+'</th><th>'+t('Harga Sell')+'</th><th class="l">'+t('Sumber')+'</th></tr>'+
+   inss.map(i=>{const r=PRICE[i]||{},dec=decOf(tickOf(i))+1;return '<tr><td class="l">'+esc(i)+'</td><td><input class="n" data-last="'+i+'" value="'+(r.last==null?'':r.last)+'"></td><td><input class="n" data-sp="'+i+'" value="'+(r.sp||0)+'" style="width:70px"></td><td>'+(r.last>0?refPx(i,'S').toFixed(dec):'—')+'</td><td>'+(r.last>0?refPx(i,'B').toFixed(dec):'—')+'</td><td class="l">'+esc(r.src||'')+'</td></tr>'}).join('')+'</table></div>';
+  return x}
+function tLed(){
+  const C=calc(),pas=Object.keys(C.acc).sort();
+  let x='<div class="card"><h3>'+t('Ledger')+'</h3><div class="row"><label>'+t('Akun')+' <input class="w" id="lPa" list="dlPa2" value="'+esc(S.pa)+'"><datalist id="dlPa2">'+pas.map(p=>'<option>'+esc(p)+'</option>').join('')+'</datalist></label><label>'+t('Tipe')+' <select id="lTy">'+LTYPES.map(([k,l])=>'<option value="'+k+'">'+l+'</option>').join('')+'</select></label><label>'+t('Jumlah')+' <input class="n" id="lAmt"></label><label>'+t('Tanggal')+' <input type="date" id="lDt"></label><label>'+t('Catatan')+' <input class="w" id="lNt"></label><button class="pri" id="lAdd">'+t('Simpan')+'</button></div>'+
+   '<div class="row"><button id="lTpl">'+t('Unduh template')+'</button><button id="lImp">'+t('Import massal')+'</button><button id="aAdd">'+t('Tambah akun')+'</button></div></div>';
+  const rows=LED.filter(l=>!S.pa||l.pa===S.pa||S.q==='all').slice().reverse();
+  x+='<div class="tw"><table><tr><th class="l">'+t('Akun')+'</th><th class="l">'+t('Tipe')+'</th><th>'+t('Jumlah')+'</th><th class="l">'+t('Tanggal')+'</th><th class="l">'+t('Catatan')+'</th><th></th></tr>'+rows.map(l=>'<tr><td class="l">'+esc(l.pa)+'</td><td class="l">'+esc((LTYPES.find(z=>z[0]===l.type)||[0,l.type])[1])+'</td><td>'+sg(l.amt)+'</td><td class="l">'+esc(l.date)+'</td><td class="l">'+esc(l.note)+'</td><td><button data-ld="'+l.id+'">✕</button></td></tr>').join('')+'</table></div><div class="note">'+t('Ledger akun')+': '+esc(S.pa||t('Semua'))+'</div>';
+  return x}
+function tSet(){
+  let x='<div class="g2"><div class="card"><h3>'+t('Level Cut')+'</h3><div class="row"><label>'+t('Level cut (EQT ratio % ≤)')+' <input class="n" id="cCut" value="'+CFG.cut+'" style="width:70px"></label></div><div class="row"><label>'+t('Level margin call (EQT ratio % <)')+' <input class="n" id="cMc" value="'+CFG.mc+'" style="width:70px"></label></div><div class="row"><label>'+t('Target ratio setelah cut')+' (%) <input class="n" id="cTg" value="'+CFG.target+'" style="width:70px"></label></div><div class="row"><label>'+t('Ratio dihitung terhadap margin')+' <select id="cBs"><option value="dt"'+(CFG.basis==='dt'?' selected':'')+'>DT</option><option value="on"'+(CFG.basis==='on'?' selected':'')+'>ON</option></select></label></div></div>'+
+   '<div class="card"><h3>'+t('Margin per lot (USD)')+'</h3><div class="tw" style="max-height:340px"><table><tr><th class="l">'+t('Produk')+'</th><th>DT</th><th>ON</th><th>'+t('Ukuran kontrak')+'</th><th>'+t('Pembagi harga')+'</th><th>'+t('Tick')+'</th></tr>'+PRODS.map(p=>'<tr><td class="l">'+p+'</td><td><input class="n" style="width:80px" data-m="dt|'+p+'" value="'+(((CFG.mpl[p]||{}).dt)||'')+'"></td><td><input class="n" style="width:80px" data-m="on|'+p+'" value="'+(((CFG.mpl[p]||{}).on)||'')+'"></td><td><input class="n" style="width:80px" data-sz="'+p+'" value="'+(CFG.size[p]||'')+'"></td><td><input class="n" style="width:60px" data-dv="'+p+'" value="'+(CFG.div[p]||1)+'"></td><td><input class="n" style="width:70px" data-tk="'+p+'" value="'+(CFG.tick[p]||'')+'"></td></tr>').join('')+'</table></div><div class="note">'+t('Margin otomatis (lot × margin/lot) — isi di Pengaturan')+'</div></div></div>'+
+   '<div class="card"><div class="row"><button id="bBak">'+t('Backup data')+'</button><button id="bRes">'+t('Restore data')+'</button><input type="file" id="fRes" accept=".json" style="display:none"><button id="bClr">'+t('Hapus semua data')+'</button></div></div>';
+  return x}
+/* ================= bind ================= */
+function bindAll(){
+  const on=(id,ev,fn)=>{const e=$(id);if(e)e[ev]=fn};
+  document.querySelectorAll('tr[data-pa]').forEach(r=>r.onclick=()=>{if(S.view==='cm'){S.view='pa';S.cm=r.dataset.pa==='—'?'':r.dataset.pa;render();return}S.pa=r.dataset.pa;S.tab='stm';render()});
+  document.querySelectorAll('button[data-v]').forEach(b=>b.onclick=()=>{S.view=b.dataset.v;render()});
+  on('#sCm','onchange',e=>{S.cm=e.target.value;render()});
+  const q=$('#sQ');if(q)q.oninput=()=>{S.q=q.value;const p=q.selectionStart;render();const n=$('#sQ');n.focus();n.setSelectionRange(p,p)};
+  on('#sPa','onchange',e=>{S.pa=e.target.value;render()});
+  on('#sOrd','onchange',e=>{CFG.ord=e.target.value;commit()});
+  on('#sAgg','onchange',e=>{CFG.agg=e.target.checked;commit()});
+  on('#iTg','onchange',e=>{CFG.target=+e.target.value||100;commit()});
+  const a=ACC[S.pa];
+  if(a){on('#iPrev','onchange',e=>{a.prev=num(e.target.value)||0;commit()});
+    on('#iMdt','onchange',e=>{a.mr.dt=e.target.value===''?null:num(e.target.value);commit()});on('#iMon','onchange',e=>{a.mr.on=e.target.value===''?null:num(e.target.value);commit()});
+    on('#iCm','onchange',e=>{a.cm=e.target.value.trim();commit()})}
+  on('#bPosImp','onclick',()=>$('#fPos').click());on('#bPosTpl','onclick',()=>dl('template_open_position.csv','Position Account,Clearing member account number,ClearingCode,ContractExpiry,BuySell,Amount,Price,SettPrice\n10017890002,1001B,NSI,202612,B,2,45.30,45.31\n10017890002,1001B,NCP,202701,S,1,5.70,5.66\n'));
+  on('#mAdd','onclick',()=>{const pa=$('#mPa').value.trim(),ins=$('#mIns').value.trim(),lot=num($('#mLot').value),px=num($('#mPx').value);if(!pa||!/^F-/.test(ins)||!(lot>0)||isNaN(px))return;
+    if(!ACC[pa])ACC[pa]={pa,cm:'',prev:0,mr:{dt:null,on:null}};POS.push({id:'m'+Date.now(),pa,cm:ACC[pa].cm,ins,side:$('#mSd').value,lot,price:px,sp:null,src:'manual'});S.pa=pa;commit()});
+  document.querySelectorAll('button[data-del]').forEach(b=>b.onclick=()=>{POS=POS.filter(p=>p.id!==b.dataset.del);commit()});
+  on('#pTpl','onclick',()=>dl('template_harga_referensi.csv','Instrument Id,Last Price,Spread (tick)\nF-XACM-NSI-202612,45.300,2\nF-XACM-NCP-202701,5.664,0\n'));
+  on('#pImp','onclick',()=>{$('#fGen').dataset.k='px';$('#fGen').click()});
+  on('#pSett','onclick',()=>{for(const p of POS)if(p.sp!=null)PRICE[p.ins]={last:p.sp,sp:(PRICE[p.ins]||{}).sp||0,src:'sett'};commit()});
+  document.querySelectorAll('input[data-last]').forEach(e=>e.onchange=()=>{const i=e.dataset.last,v=num(e.value);if(isNaN(v)||v<=0)delete PRICE[i];else PRICE[i]=Object.assign(PRICE[i]||{sp:0},{last:v,src:'manual'});commit()});
+  document.querySelectorAll('input[data-sp]').forEach(e=>e.onchange=()=>{const i=e.dataset.sp;PRICE[i]=Object.assign(PRICE[i]||{last:0},{sp:num(e.value)||0});commit()});
+  on('#lAdd','onclick',()=>{const pa=$('#lPa').value.trim(),ty=$('#lTy').value,amt=num($('#lAmt').value);if(!pa||isNaN(amt))return;if(!ACC[pa])ACC[pa]={pa,cm:'',prev:0,mr:{dt:null,on:null}};LED.push({id:'l'+Date.now(),pa,type:ty,amt:ty==='pl'?amt:Math.abs(amt),date:$('#lDt').value,note:$('#lNt').value});S.pa=pa;commit()});
+  document.querySelectorAll('button[data-ld]').forEach(b=>b.onclick=()=>{LED=LED.filter(l=>l.id!==b.dataset.ld);commit()});
+  on('#lTpl','onclick',()=>dl('template_ledger.csv','Account,Type,Amount,Date,Note\n10017890002,Previous Balance,50000,2026-11-23,saldo awal\n10017890002,Deposit,100000,2026-11-23,setoran\n10017890002,Withdrawal,20000,2026-11-24,penarikan\n10017890002,Adjustment Credit,500,2026-11-24,koreksi\n10017890002,Adjustment Debit,200,2026-11-24,koreksi\n10017890002,Commission,300,2026-11-24,\n'));
+  on('#lImp','onclick',()=>{$('#fGen').dataset.k='led';$('#fGen').click()});
+  on('#aAdd','onclick',()=>{const pa=prompt(t('Akun'));if(pa&&pa.trim()){ACC[pa.trim()]={pa:pa.trim(),cm:'',prev:0,mr:{dt:null,on:null}};S.pa=pa.trim();commit()}});
+  for(const [id,k] of [['#cCut','cut'],['#cMc','mc'],['#cTg','target']])on(id,'onchange',e=>{CFG[k]=+e.target.value||CFG[k];commit()});
+  on('#cBs','onchange',e=>{CFG.basis=e.target.value;commit()});
+  document.querySelectorAll('input[data-m]').forEach(e=>e.onchange=()=>{const [k,p]=e.dataset.m.split('|');CFG.mpl[p]=CFG.mpl[p]||{};CFG.mpl[p][k]=num(e.value)||0;commit()});
+  document.querySelectorAll('input[data-sz]').forEach(e=>e.onchange=()=>{CFG.size[e.dataset.sz]=num(e.value)||CFG.size[e.dataset.sz];commit()});
+  document.querySelectorAll('input[data-dv]').forEach(e=>e.onchange=()=>{CFG.div[e.dataset.dv]=num(e.value)||1;commit()});
+  document.querySelectorAll('input[data-tk]').forEach(e=>e.onchange=()=>{CFG.tick[e.dataset.tk]=num(e.value)||0.01;commit()});
+  on('#bBak','onclick',()=>dl('levelcut-backup_'+new Date().toISOString().slice(0,10)+'.json',JSON.stringify({app:'levelcut',CFG,POS,LED,ACC,PRICE}),'application/json'));
+  on('#bRes','onclick',()=>$('#fRes').click());
+  on('#fRes','onchange',async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const o=JSON.parse(await f.text());if(o.app!=='levelcut')throw new Error('Bukan backup LevelCut');CFG=Object.assign({},DEF,o.CFG);POS=o.POS||[];LED=o.LED||[];ACC=o.ACC||{};PRICE=o.PRICE||{};document.documentElement.dataset.theme=CFG.theme;await commit()}catch(er){msg('Restore',[er.message])}});
+  on('#bClr','onclick',async()=>{if(!confirm(t('Hapus semua data')+'?'))return;POS=[];LED=[];ACC={};PRICE={};await commit()});
+  const dz=$('#dz');if(dz){dz.onclick=()=>$('#fPos').click()}}
+function render(){renderNav();$('#main').innerHTML={mon:tMon,stm:tStm,pos:tPos,px:tPx,led:tLed,set:tSet}[S.tab]();bindAll();applyLang()}
+/* ================= ekspor ================= */
+function aoaStm(c){const rows=viewRows(c),pl=cutPlan(c,rows);
+  return {st:[[t('Statement'),c.pa],[t('Previous Balance'),c.a.prev],[t('Margin In'),c.sm.dep],[t('Margin Out'),c.sm.wd],[t('Commission'),c.sm.comm],[t('Interest'),c.sm.int],[t('Adjustment'),c.adj],[t('Profit / Loss'),c.sm.pl],[t('New Balance'),c.nb],[t('Floating'),c.fl],[t('Equity'),c.eq],[t('Margin Req DT'),c.mdt],[t('Margin Req ON'),c.mon],[t('Eff Mar DT'),c.effdt],[t('Eff Mar ON'),c.effon],[t('EQT Ratio'),c.ratio==null?'':+(c.ratio*100).toFixed(2)+'%'],[t('Status'),c.status]],
+   pos:[['No',t('Item'),'Lot','BS',t('Price'),t('Reff Price'),t('Floating'),t('Cut lot')],...rows.map((r,i)=>[i+1,r.ins,r.lot,r.side,r.price,r.ref==null?'':r.ref,+r.pl.toFixed(2),pl.rows[i]?pl.rows[i].cut||'':''])]}}
+function aoaMon(){const all=Object.values(calc().acc).sort((a,b)=>(a.ratio==null?9e9:a.ratio)-(b.ratio==null?9e9:b.ratio));return [[t('Akun'),'CM','Lot',t('Saldo'),t('Floating'),t('Equity'),t('Margin Req'),t('Eff Margin'),t('EQT Ratio'),t('Buffer ke cut'),t('Status')],...all.map(r=>[r.pa,r.cm,r.lots,r.nb,r.fl,r.eq,r.mb,CFG.basis==='on'?r.effon:r.effdt,r.ratio==null?'':+(r.ratio*100).toFixed(2),r.buf==null?'':r.buf,r.status])]}
+function exportXls(){if(!window.XLSX){alert(t('Ekspor Excel gagal (library belum termuat — perlu internet).'));return}
+  const wb=XLSX.utils.book_new(),add=(n,a)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),n.slice(0,31));
+  add('Monitor',aoaMon());
+  const C=calc();for(const c of Object.values(C.acc).slice(0,40)){const A=aoaStm(c);add('Stmt '+c.pa,[...A.st,[],...A.pos])}
+  add('Positions',[['Account','CM','Instrument','BS','Lot','Price','Ref','Floating'],...Object.values(C.acc).flatMap(c=>sortPos(c.ps).map(p=>[c.pa,c.cm,p.ins,p.side,p.lot,p.price,p.ref==null?'':p.ref,+p.pl.toFixed(2)]))]);
+  add('Ref Prices',[['Instrument Id','Last','Spread (tick)','Buy','Sell'],...Object.entries(PRICE).map(([i,r])=>[i,r.last,r.sp||0,refPx(i,'S'),refPx(i,'B')])]);
+  add('Ledger',[['Account','Type','Amount','Date','Note'],...LED.map(l=>[l.pa,l.type,l.amt,l.date,l.note])]);
+  XLSX.writeFile(wb,'levelcut_'+new Date().toISOString().slice(0,10)+'.xlsx')}
+function exportPdf(){if(!window.jspdf||!(window.jspdf.jsPDF.API&&window.jspdf.jsPDF.API.autoTable)){alert(t('Ekspor PDF gagal (library belum termuat — perlu internet).'));return}
+  const TC={green:[46,125,50],burgundy:[140,28,44],dark:[31,51,80],light:[31,51,80]}[CFG.theme]||[46,125,50];
+  const doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'pt',format:'a4'});doc.setFillColor(TC[0],TC[1],TC[2]);doc.rect(0,0,842,44,'F');doc.setTextColor(255,255,255);doc.setFontSize(16);doc.text('LevelCut',36,28);doc.setTextColor(0,0,0);doc.setFontSize(9);
+  const fmt=A=>A.map((r,i)=>i===0?r:r.map(c=>typeof c==='number'?f2(c):c));
+  const tb=(title,A,y)=>{doc.setFontSize(11);doc.text(title,36,y);doc.autoTable({startY:y+6,head:[A[0]],body:fmt(A).slice(1),styles:{fontSize:7.5,cellPadding:2.5},headStyles:{fillColor:TC,textColor:255},alternateRowStyles:{fillColor:[240,240,240]},margin:{left:36,right:36}})};
+  tb('Monitor',aoaMon().slice(0,40),66);
+  const C=calc(),c=C.acc[S.pa];if(c){const A=aoaStm(c);doc.addPage();doc.setFillColor(TC[0],TC[1],TC[2]);doc.rect(0,0,842,44,'F');doc.setTextColor(255,255,255);doc.setFontSize(16);doc.text('Statement — '+c.pa,36,28);doc.setTextColor(0,0,0);
+    doc.autoTable({startY:56,head:[[t('Statement'),'']],body:fmt(A.st).slice(1),styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:TC,textColor:255},margin:{left:36,right:500}});
+    tb(t('Open Position'),A.pos.slice(0,60),doc.lastAutoTable.finalY+22)}
+  doc.save('levelcut_'+new Date().toISOString().slice(0,10)+'.pdf')}
+/* ================= init ================= */
+async function init(){
+  const c=await kvGet('cfg');if(c){CFG=Object.assign({},DEF,c);for(const k of ['size','div','tick','mpl'])CFG[k]=Object.assign({},DEF[k],c[k]||{})}
+  POS=(await kvGet('pos'))||[];LED=(await kvGet('led'))||[];ACC=(await kvGet('acc'))||{};PRICE=(await kvGet('price'))||{};
+  document.documentElement.dataset.theme=CFG.theme;$('#lang').value=CFG.lang;$('#theme').value=CFG.theme;
+  const pa=Object.keys(ACC);if(pa.length)S.pa=pa[0];applyLang();render()}
+$('#bPos').onclick=()=>$('#fPos').click();
+$('#fPos').onchange=e=>{const f=[...e.target.files];e.target.value='';if(f.length)importPositions(f)};
+$('#fGen').onchange=e=>{const f=e.target.files[0],k=e.target.dataset.k;e.target.value='';if(!f)return;if(k==='px')importPrices(f);else if(k==='led')importLedger(f)};
+$('#bXls').onclick=exportXls;$('#bPdf').onclick=exportPdf;
+$('#lang').onchange=e=>{CFG.lang=e.target.value;kvSet('cfg',CFG);applyLang();render()};
+$('#theme').onchange=e=>{CFG.theme=e.target.value;document.documentElement.dataset.theme=CFG.theme;kvSet('cfg',CFG)};
+$('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
+document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer&&e.dataTransfer.files.length)importPositions([...e.dataTransfer.files])});
+init();
+</script>
+</body>
+</html>
