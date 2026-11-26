@@ -161,6 +161,7 @@ svg text{fill:var(--ink3);font:10px var(--font)}
   <div class="status" id="status" hidden><span id="statusMsg"></span><button id="statusX" aria-label="Close">×</button></div>
 
   <section class="slots" id="slots"></section>
+  <section class="card" id="xbox" hidden style="margin-bottom:12px"></section>
 
   <section class="card empty" id="empty" hidden>
     <h2 data-i="emptyTitle"></h2>
@@ -190,6 +191,7 @@ svg text{fill:var(--ink3);font:10px var(--font)}
     <details id="methodWrap"><summary data-i="methodTitle"></summary><div class="foot" style="margin-top:8px;line-height:1.7" id="method"></div></details>
 
     <section class="kpis" id="kpis"></section>
+    <section class="card" id="spCard"><h2 data-i="spTitle"></h2><div class="hint" data-i="spHint"></div><div class="kpis" id="spK" style="margin:8px 0"></div><div class="foot" id="spTypes" style="margin-bottom:8px"></div><div style="overflow:auto;max-height:420px"><table class="plt" id="spT"></table></div></section>
     <section class="two">
       <div class="card"><h2 data-i="volOiTitle"></h2><div class="hint" data-i="volOiHint"></div><div class="legend" id="lgVO"></div><div class="gb" id="chVO"></div></div>
       <div class="card"><h2 data-i="hoursTitle"></h2><div class="hint" data-i="hoursHint"></div><div class="legend" id="lgH"></div><div id="chH"></div></div>
@@ -262,8 +264,15 @@ MD.execTs=function(s){
 };
 MD.ingestTrades=function(objs){
   const c=MD.col(Object.keys(objs[0]));
-  const tk=c.contractticker,pr=c.tradeprice,q=c.quantity,dt=c.tradingdate||c.tradedate,bs=c.bs,ex=c.executiontime,tx=c.exchangetransactionid;
+  const tk=c.contractticker,pr=c.tradeprice,q=c.quantity,dt=c.tradingdate||c.tradedate,bs=c.bs,ex=c.executiontime,tx=c.exchangetransactionid,ac=c.tradingaccountnumber;
   const seen=new Set(),list=[];let prefix='';
+  const sides={};   // crosstrade: sisi Buy dan Sell dengan Sub Account, kontrak, quantity, harga, dan execution time yang sama (dalam satu Trading Account)
+  const sub=c.subaccount,pxs=o=>parseFloat(o[pr]);
+  const tcols=[c.tradetype,c.tradecode,c.remarks,c.userdefine1,c.userdefine2,c.userdefine3].filter(Boolean),ttc=c.tradetype;
+  const flagOf=o=>{const s=tcols.map(k=>String(o[k]==null?'':o[k])).join(' | ');return {fx:/expir/i.test(s),fm:/manual|block/i.test(s),txt:s}};   // expiry / manual fills / block trade dari kolom keterangan
+  const spSide={};
+  if(tcols.length&&tx)objs.forEach(o=>{const f=flagOf(o);if(!(f.fx||f.fm))return;const sd=bs?String(o[bs]).trim().toUpperCase()[0]:'',k=String(o[tx]).trim()+'|'+MD.short(o[tk]);const e=spSide[k]||(spSide[k]={B:new Set(),S:new Set()});if(sd==='B'||sd==='S')e[sd].add((ac?String(o[ac]).trim()+'/':'')+(sub?String(o[sub]).trim():''))});
+  if(tx&&bs&&ac&&sub)objs.forEach(o=>{const sd=String(o[bs]).trim().toUpperCase()[0],k=String(o[tx]).trim()+'|'+MD.short(o[tk]);if(!k||(sd!=='B'&&sd!=='S'))return;(sides[k]||(sides[k]={B:new Set(),S:new Set()}))[sd].add([String(o[ac]).trim(),String(o[sub]).trim(),MD.short(o[tk]),parseFloat(o[q]),pxs(o),o[ex]?String(o[ex]).trim():''].join('~'))});
   objs.forEach((o,i)=>{
     const con=MD.short(o[tk]);const price=parseFloat(o[pr]),qty=parseFloat(o[q]);
     if(!con||!isFinite(price)||!isFinite(qty))return;
@@ -273,17 +282,24 @@ MD.ingestTrades=function(objs){
     const date=dt?MD.iso(o[dt]):'';if(!date)return;
     if(!prefix)prefix=MD.prefix(o[tk]);
     const e=ex?MD.execTs(o[ex]):{ts:0,hk:''};
-    list.push({i,con,price,qty,date,ts:e.ts,hk:e.hk});
+    let xm='';const sx=txv&&sides[txv+'|'+con];if(sx)for(const a of sx.B)if(sx.S.has(a)){xm=a.split('~')[0];break}
+    const fl=tcols.length?flagOf(o):{fx:false,fm:false,txt:''},tp=ttc?String(o[ttc]).trim():'',sp=spSide[txv+'|'+con];
+    list.push({i,con,price,qty,date,ts:e.ts,hk:e.hk,xm,fx:fl.fx,fm:fl.fm,tp,tid:txv,tm:ex?String(o[ex]).trim():'',buy:sp?[...sp.B].join(', '):'',sell:sp?[...sp.S].join(', '):'',rem:c.remarks?String(o[c.remarks]||'').trim():''});
   });
   list.sort((a,b)=>a.ts-b.ts||a.i-b.i);
-  const out={};
+  const out={},specials={};
   for(const t of list){
     const d=out[t.date]||(out[t.date]={});let r=d[t.con];
-    if(!r)r=d[t.con]={o:t.price,h:t.price,l:t.price,c:t.price,v:0,n:0,pv:0,hrs:{}};
-    r.h=Math.max(r.h,t.price);r.l=Math.min(r.l,t.price);r.c=t.price;r.v+=t.qty;r.n++;r.pv+=t.price*t.qty;
-    if(t.hk)r.hrs[t.hk]=(r.hrs[t.hk]||0)+t.qty;
+    const sd=specials[t.date]||(specials[t.date]={list:[],types:{}});sd.types[t.tp||'-']=(sd.types[t.tp||'-']||0)+1;
+    if(t.fx||t.fm)sd.list.push({con:t.con,tm:t.tm,tid:t.tid,tp:t.tp,qty:t.qty,price:t.price,buy:t.buy,sell:t.sell,rem:t.rem,k:t.fx&&t.fm?'both':t.fx?'expiry':'manual'});
+    if(!r)r=d[t.con]={o:null,h:t.price,l:t.price,c:t.price,v:0,n:0,pv:0,hrs:{}};
+    if(r.o==null&&!t.fx)r.o=t.price;   // transaksi Expiry bukan harga Open
+    r.h=Math.max(r.h,t.price);r.l=Math.min(r.l,t.price);r.c=t.price;
+    const g=t.xm?((r.x||(r.x={}))[t.xm]||(r.x[t.xm]={v:0,n:0,pv:0,hrs:{}})):r;   // OHLC tetap dari semua transaksi; volume/jumlah transaksi crosstrade dipisah
+    g.v+=t.qty;g.n++;g.pv+=t.price*t.qty;
+    if(t.hk)g.hrs[t.hk]=(g.hrs[t.hk]||0)+t.qty;
   }
-  return {dates:out,count:list.length,rows:objs.length,prefix};
+  return {dates:out,specials,count:list.length,rows:objs.length,prefix};
 };
 MD.ingestPositions=function(objs){
   const c=MD.col(Object.keys(objs[0]));
@@ -312,10 +328,10 @@ MD.ingestRates=function(objs){
   }
   return {dates:out,count:n,rows:objs.length,prefix};
 };
-MD.newData=()=>({trades:{},settle:{},oi:null,files:{trades:null,positions:null,rates:[]},manual:{},oiDiv:2,prefix:'F-XACM-'});
+MD.newData=()=>({trades:{},settle:{},oi:null,files:{trades:null,positions:null,rates:[]},manual:{},specials:{},oiDiv:2,xex:['1001A'],prefix:'F-XACM-'});
 MD.merge=function(D,kind,res,name){
   if(res.prefix)D.prefix=res.prefix;
-  if(kind==='trades'){for(const d in res.dates)D.trades[d]=res.dates[d];D.files.trades={name,dates:Object.keys(res.dates).sort(),n:res.count,rows:res.rows}}
+  if(kind==='trades'){D.specials=D.specials||{};for(const d in res.dates){D.trades[d]=res.dates[d];D.specials[d]=(res.specials||{})[d]||{list:[],types:{}}}D.files.trades={name,dates:Object.keys(res.dates).sort(),n:res.count,rows:res.rows}}
   else if(kind==='rates'){for(const d in res.dates)D.settle[d]=Object.assign(D.settle[d]||{},res.dates[d]);D.files.rates=(D.files.rates||[]).filter(x=>x.name!==name).concat([{name,dates:Object.keys(res.dates).sort(),n:res.count,rows:res.rows}])}
   else if(kind==='positions'){D.oi={asOf:res.asOf,long:res.long,accts:res.accts};D.files.positions={name,asOf:res.asOf,n:Object.keys(res.long).length,rows:res.rows}}
 };
@@ -343,9 +359,9 @@ id:{
  estVolTotals:'Estimated volume totals',oiTotals:"Prior day's open interest totals",derivatives:'{p} Derivatives',
  dailyVol:'Daily Volume Total',monthlyVol:'Monthly Volume Total',dailyOi:'Daily OI Total',
  manualTitle:'Penyesuaian manual',manualHint:'Isi bila data belum ada di file: kurs, volume bulanan, OI kontrak yang tidak ada di file posisi, atau settlement hari sebelumnya untuk menghitung Change.',
- oiDiv:'Pembagi posisi long',contract:'Kontrak',field:'Kolom',value:'Nilai',add:'Tambahkan',fOi:'Prior Day OI',fPrior:'Settlement sebelumnya',manualOne:'{c} · {f} = {v}',
+ oiDiv:'Pembagi posisi long',xTitle:'Crosstrade',xHint:'Crosstrade = transaksi di mana sisi Buy dan Sell memiliki Sub Account, Contract Ticker, Quantity, Trade Price, dan Execution Time yang sama. Hanya untuk Trading Account yang dicentang (standar: 1001A) volume dan jumlah transaksinya tidak dihitung; Open, High, Low, Last tetap memakai semua transaksi.',xIncl:'dihitung di volume',xExcl:'tidak dihitung di volume',xSum:'Crosstrade dikeluarkan dari volume: {v} lot',contract:'Kontrak',field:'Kolom',value:'Nilai',add:'Tambahkan',fOi:'Prior Day OI',fPrior:'Settlement sebelumnya',manualOne:'{c} · {f} = {v}',
  methodTitle:'Cara menghitung',
- method:'<b>Open / Last</b>: harga transaksi pertama / terakhir menurut Execution Time. <b>High / Low</b>: harga tertinggi / terendah. <b>Est. Volume</b>: jumlah Quantity satu sisi (transaksi beli dan jual dengan Exchange Transaction ID yang sama dihitung sekali). <b>Settle</b>: kolom Price pada FO EoD Rates. <b>Change</b>: Settle T dikurangi Settle T-1 (settlement tanggal sebelumnya dari file EoD Rates yang diunggah lewat tombol Unggah settlement T-1, atau isian manual). <b>Prior Day OI</b>: total Open Quantity long dari FO Open Position Details dibagi pembagi (standarnya 2, karena tiap posisi muncul di akun klien dan akun ACM). Volume bulanan dihitung dari file trade bila lebih dari satu hari dimuat, bila tidak, memakai isian manual.',
+ method:'<b>Open / Last</b>: harga transaksi pertama / terakhir menurut Execution Time; transaksi bertanda Expiry tidak dihitung sebagai Open. <b>High / Low</b>: harga tertinggi / terendah. <b>Est. Volume</b>: jumlah Quantity satu sisi (transaksi beli dan jual dengan Exchange Transaction ID yang sama dihitung sekali). <b>Settle</b>: kolom Price pada FO EoD Rates. <b>Change</b>: Settle T dikurangi Settle T-1 (settlement tanggal sebelumnya dari file EoD Rates yang diunggah lewat tombol Unggah settlement T-1, atau isian manual). <b>Prior Day OI</b>: total Open Quantity long dari FO Open Position Details dibagi pembagi (standarnya 2, karena tiap posisi muncul di akun klien dan akun ACM). Volume bulanan dihitung dari file trade bila lebih dari satu hari dimuat, bila tidak, memakai isian manual.',
  kTrades:'Transaksi',kTradesN:'trade unik',kVol:'Total volume',kLot:'lot',kOi:'Total OI',kOiN:'lot, posisi long',kTurn:'Volume / OI',kTurnN:'perputaran harian',kContracts:'Kontrak aktif',kContractsN:'dari {n} kontrak terdaftar',kPeak:'Jam tersibuk',
  volOiTitle:'Volume dan OI per produk',volOiHint:'Volume transaksi hari ini dibanding open interest.',lgVol:'Volume',lgOi:'OI',
  hoursTitle:'Volume per jam',hoursHint:'Jam menurut Execution Time pada file trade.',
@@ -393,9 +409,9 @@ en:{
  estVolTotals:'Estimated volume totals',oiTotals:"Prior day's open interest totals",derivatives:'{p} Derivatives',
  dailyVol:'Daily Volume Total',monthlyVol:'Monthly Volume Total',dailyOi:'Daily OI Total',
  manualTitle:'Manual adjustments',manualHint:'Fill in what the files do not hold: FX rate, monthly volume, OI for contracts missing from the position file, or the previous settlement to compute Change.',
- oiDiv:'Long position divisor',contract:'Contract',field:'Field',value:'Value',add:'Add',fOi:'Prior Day OI',fPrior:'Previous settlement',manualOne:'{c} · {f} = {v}',
+ oiDiv:'Long position divisor',xTitle:'Cross trades',xHint:'A cross trade is a trade whose Buy and Sell sides have the same Sub Account, Contract Ticker, Quantity, Trade Price and Execution Time. For the ticked Trading Accounts (default: 1001A) its volume and trade count are not counted; Open, High, Low and Last still use all trades.',xIncl:'counted in volume',xExcl:'not counted in volume',xSum:'Cross trades excluded from volume: {v} lots',contract:'Contract',field:'Field',value:'Value',add:'Add',fOi:'Prior Day OI',fPrior:'Previous settlement',manualOne:'{c} · {f} = {v}',
  methodTitle:'How it is calculated',
- method:'<b>Open / Last</b>: first / last trade price by Execution Time. <b>High / Low</b>: highest / lowest price. <b>Est. Volume</b>: sum of one-side Quantity (buy and sell rows with the same Exchange Transaction ID count once). <b>Settle</b>: the Price column of FO EoD Rates. <b>Change</b>: Settle T minus Settle T-1 (the settlement of the previous date from the EoD Rates file uploaded with the Upload T-1 settlement button, or a manual entry). <b>Prior Day OI</b>: total long Open Quantity from FO Open Position Details divided by the divisor (default 2, because each position appears in a client account and in the ACM account). Monthly volume is summed from the trade file when more than one day is loaded, otherwise the manual entry is used.',
+ method:'<b>Open / Last</b>: first / last trade price by Execution Time; trades marked Expiry are not counted as the Open. <b>High / Low</b>: highest / lowest price. <b>Est. Volume</b>: sum of one-side Quantity (buy and sell rows with the same Exchange Transaction ID count once). <b>Settle</b>: the Price column of FO EoD Rates. <b>Change</b>: Settle T minus Settle T-1 (the settlement of the previous date from the EoD Rates file uploaded with the Upload T-1 settlement button, or a manual entry). <b>Prior Day OI</b>: total long Open Quantity from FO Open Position Details divided by the divisor (default 2, because each position appears in a client account and in the ACM account). Monthly volume is summed from the trade file when more than one day is loaded, otherwise the manual entry is used.',
  kTrades:'Trades',kTradesN:'unique trades',kVol:'Total volume',kLot:'lots',kOi:'Total OI',kOiN:'lots, long positions',kTurn:'Volume / OI',kTurnN:'daily turnover',kContracts:'Active contracts',kContractsN:'of {n} listed contracts',kPeak:'Busiest hour',
  volOiTitle:'Volume and OI by product',volOiHint:'Traded volume today against open interest.',lgVol:'Volume',lgOi:'OI',
  hoursTitle:'Volume by hour',hoursHint:'Hours follow Execution Time in the trade file.',
@@ -436,6 +452,8 @@ en:{
 }};
 let lang='id';
 try{const s=localStorage.getItem('md-lang');if(s==='id'||s==='en')lang=s;else if((navigator.language||'').toLowerCase().startsWith('en'))lang='en'}catch(e){}
+Object.assign(L.id,{spTitle:'Monitor Trade Expiry & Manual Fills',spHint:'Transaksi dari file FO Trade Listing yang ber-keterangan Expiry (mis. Trade Type: Futures Expiry) atau Manual fills / Block trade. Transaksi Expiry tidak dihitung sebagai harga Open.',spKex:'Futures Expiry',spKmf:'Manual fills / Block',spTypes:'Trade Type pada file',spNoData:'Belum ada data Trade Listing.',spNone:'Tidak ada transaksi Expiry atau Manual fills pada tanggal ini.',spTime:'Execution Time',spTid:'Exchange Transaction ID',spCon:'Kontrak',spKind:'Jenis',spType:'Trade Type / Keterangan',spBuy:'Sisi Buy',spSell:'Sisi Sell',spQty:'Qty',spPrice:'Harga',spExpiry:'Expiry',spManual:'Manual fills',spBoth:'Expiry + Manual',spRem:'Remarks',spSheet:'Trade Khusus',i_expiry:'{n} transaksi Futures Expiry ({v} lot) pada tanggal ini. Harga transaksi expiry tidak dipakai sebagai Open.',i_manual:'{n} transaksi Manual fills / Block trade ({v} lot) pada tanggal ini.'});
+Object.assign(L.en,{spTitle:'Expiry & Manual Fills Monitor',spHint:'Trades in the FO Trade Listing marked as Expiry (e.g. Trade Type: Futures Expiry) or Manual fills / Block trade. Expiry trades are not counted as the Open price.',spKex:'Futures Expiry',spKmf:'Manual fills / Block',spTypes:'Trade Types in file',spNoData:'No Trade Listing data yet.',spNone:'No Expiry or Manual fills trades on this date.',spTime:'Execution Time',spTid:'Exchange Transaction ID',spCon:'Contract',spKind:'Kind',spType:'Trade Type / Note',spBuy:'Buy side',spSell:'Sell side',spQty:'Qty',spPrice:'Price',spExpiry:'Expiry',spManual:'Manual fills',spBoth:'Expiry + Manual',spRem:'Remarks',spSheet:'Special Trades',i_expiry:'{n} Futures Expiry trades ({v} lots) on this date. Expiry prices are not used as the Open.',i_manual:'{n} Manual fills / Block trades ({v} lots) on this date.'});
 const t=(k,v)=>{let s=(L[lang][k]??L.id[k]??k);if(v)for(const x in v)s=s.split('{'+x+'}').join(v[x]);return s};
 const LOC=()=>lang==='id'?'id-ID':'en-US';
 const fmt=n=>Math.round(n).toLocaleString(LOC());
@@ -470,6 +488,7 @@ const pName=p=>t('derivatives',{p:(PNAME[p]||p).toUpperCase()});
 let curDate='';
 function allDates(){return [...new Set([...Object.keys(DATA.trades),...Object.keys(DATA.settle)])].sort()}
 function man(d){return DATA.manual[d]||(DATA.manual[d]={})}
+const effOf=x=>{const o={v:x.v,n:x.n,pv:x.pv,hrs:Object.assign({},x.hrs)};if(x.x)for(const m in x.x)if(!(DATA.xex||['1001A']).includes(m)){const y=x.x[m];o.v+=y.v;o.n+=y.n;o.pv+=y.pv;for(const k in y.hrs)o.hrs[k]=(o.hrs[k]||0)+y.hrs[k]}return o};
 function buildReport(date){
   const tr=DATA.trades[date]||{},se=DATA.settle[date]||{},m=DATA.manual[date]||{};
   const prevDates=Object.keys(DATA.settle).filter(d=>d<date).sort();
@@ -478,7 +497,7 @@ function buildReport(date){
   const set=new Set([...Object.keys(tr),...Object.keys(se),...(DATA.oi?Object.keys(DATA.oi.long):[]),...Object.keys(m.oi||{}),...Object.keys(m.priorSettle||{})]);
   const byP={};
   [...set].sort().forEach(c=>{
-    const p=prodOf(c),x=tr[c];
+    const p=prodOf(c),x0=tr[c],x=x0?Object.assign({},x0,effOf(x0)):null;
     const settle=se[c]!=null?se[c]:null;
     const ps=(m.priorSettle&&m.priorSettle[c]!=null)?m.priorSettle[c]:(prev[c]!=null?prev[c]:null);
     let oi=null,oiManual=false;
@@ -492,10 +511,11 @@ function buildReport(date){
   const month=date.slice(0,7),mdays=Object.keys(DATA.trades).filter(d=>d.startsWith(month)&&d<=date);
   let monthly=null,monthlyManual=false;
   if(m.monthly!=null&&m.monthly!==''){monthly=+m.monthly;monthlyManual=true}
-  else if(mdays.length>1)monthly=mdays.reduce((a,d)=>a+Object.values(DATA.trades[d]).reduce((s,r)=>s+r.v,0),0);
+  else if(mdays.length>1)monthly=mdays.reduce((a,d)=>a+Object.values(DATA.trades[d]).reduce((s,r)=>s+effOf(r).v,0),0);
+  const cross={};Object.values(tr).forEach(x=>{if(x.x)for(const m in x.x){const y=x.x[m],a=cross[m]||(cross[m]={v:0,n:0});a.v+=y.v;a.n+=y.n}});
   const hours={};
   products.forEach(p=>p.rows.forEach(r=>{for(const k in r.hrs){(hours[k]||(hours[k]={}))[p.code]=(hours[k][p.code]||0)+r.hrs[k]}}));
-  return {date,prevDate,prevDates,products,vol,oi,n,monthly,monthlyManual,usdidr:m.usdidr!=null&&m.usdidr!==''?+m.usdidr:null,hours,
+  return {date,prevDate,prevDates,products,vol,oi,n,cross,special:(DATA.specials||{})[date]||null,monthly,monthlyManual,usdidr:m.usdidr!=null&&m.usdidr!==''?+m.usdidr:null,hours,
     traded:products.reduce((a,p)=>a+p.rows.filter(r=>r.v>0).length,0),listed:products.reduce((a,p)=>a+p.rows.length,0)};
 }
 const dateLong=d=>{const [y,mo,da]=d.split('-').map(Number);return new Date(Date.UTC(y,mo-1,da)).toLocaleDateString(LOC(),{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})};
@@ -506,6 +526,9 @@ function insights(R){
   const out=[];const add=(lvl,key,params,items)=>out.push({lvl,key,params,items});
   const rows=R.products.flatMap(p=>p.rows);
   const traded=rows.filter(r=>r.v>0);
+  {const sp=R.special,ex=sp?sp.list.filter(x=>x.k!=='manual'):[],mf=sp?sp.list.filter(x=>x.k!=='expiry'):[];
+   if(ex.length)add('watch','i_expiry',{n:ex.length,v:fmt(ex.reduce((a,x)=>a+x.qty,0))},ex.slice(0,10).map(x=>`${x.con} · ${fmt(x.qty)} ${t('kLot')} @ ${x.price} · ${x.tp||'-'}`));
+   if(mf.length)add('watch','i_manual',{n:mf.length,v:fmt(mf.reduce((a,x)=>a+x.qty,0))},mf.slice(0,10).map(x=>`${x.con} · ${fmt(x.qty)} ${t('kLot')} @ ${x.price} · ${x.tp||'-'}`))}
   if(traded.length){
     if(R.oi>0)add('info','i_summary',{v:fmt(R.vol),n:fmt(R.n),c:traded.length,oi:fmt(R.oi),turn:fmtD(R.vol/R.oi,2)});
     else add('info','i_summaryNoOi',{v:fmt(R.vol),n:fmt(R.n),c:traded.length});
@@ -523,7 +546,7 @@ function insights(R){
   const mv=rows.filter(r=>r.chg!=null&&r.prior).map(r=>({r,pc:r.chg/r.prior})).sort((a,b)=>Math.abs(b.pc)-Math.abs(a.pc)).slice(0,4);
   if(mv.length)add(Math.abs(mv[0].pc)>=0.02?'watch':'info','i_move',{},mv.map(x=>`${x.r.con}: ${spct(x.pc)} (${x.r.chg>0?'+':'−'}${fmtD(Math.abs(x.r.chg),decOf(prodOf(x.r.con)))})`));
   const rg=traded.filter(r=>r.v>=10&&r.l>0).map(r=>({r,rg:(r.h-r.l)/r.l})).sort((a,b)=>b.rg-a.rg)[0];
-  if(rg){const r=rg.r,d=decOf(prodOf(r.con));add('info','i_range',{c:r.con,range:pct(rg.rg),l:fmtD(r.l,d),h:fmtD(r.h,d),o:fmtD(r.o,d),la:fmtD(r.c,d),mv:spct((r.c-r.o)/r.o)})}
+  if(rg){const r=rg.r,d=decOf(prodOf(r.con));add('info','i_range',{c:r.con,range:pct(rg.rg),l:fmtD(r.l,d),h:fmtD(r.h,d),o:fmtD(r.o!=null?r.o:r.c,d),la:fmtD(r.c,d),mv:spct(r.o!=null?(r.c-r.o)/r.o:0)})}
   const gap=traded.filter(r=>r.v>=10&&r.settle!=null&&Math.abs(r.c-r.settle)/r.settle>0.0025).sort((a,b)=>Math.abs(b.c-b.settle)/b.settle-Math.abs(a.c-a.settle)/a.settle).slice(0,4);
   if(gap.length)add('watch','i_gap',{th:pct(0.0025,2)},gap.map(r=>{const d=decOf(prodOf(r.con));return `${r.con}: Last ${fmtD(r.c,d)} vs Settle ${fmtD(r.settle,decOf(prodOf(r.con),true))} (${spct((r.settle-r.c)/r.c)})`}));
   const curve=R.products.map(p=>{
@@ -558,6 +581,7 @@ function showTip(e,html){tip.innerHTML=html;tip.style.display='block';const w=ti
 function hideTip(){tip.style.display='none'}
 let R=null;
 const dash='<span class="dash">-</span>';
+const esc=v=>String(v==null?'':v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function renderSlots(R0){
   const f=DATA.files,rl=f.rates||[],date=R0?R0.date:'';
   const fileFor=d=>{for(let i=rl.length-1;i>=0;i--)if(rl[i].dates.includes(d))return rl[i];return null};
@@ -573,10 +597,19 @@ function renderSlots(R0){
     slot(!!pf,t('slotPrev'),pf?nm(pf):t('notLoaded'),pf?t('loadedRates',{n:fmt(pf.n),d:pd}):t('prevNone'),up('prev',t('uploadPrev')));
   $('slots').querySelectorAll('button[data-up]').forEach(b=>b.onclick=()=>{pendingKind=b.dataset.up;$('fileK').click()});
 }
+function renderCross(){
+  const b=$('xbox');b.hidden=false;const exl=DATA.xex||['1001A'],isEx=m=>exl.includes(m),ms=[...new Set([...Object.keys(R.cross),...exl])].sort(),cr=m=>R.cross[m]||{v:0,n:0};
+  const ex=ms.filter(isEx).reduce((a,m)=>a+cr(m).v,0);
+  b.innerHTML=`<div style="font-weight:600">${t('xTitle')}</div><div class="hint foot" style="margin:4px 0 8px">${t('xHint')}</div>`+
+   ms.map(m=>`<label style="display:flex;gap:8px;align-items:center;margin:4px 0"><input type="checkbox" data-xm="${m}" ${isEx(m)?'checked':''}><span><b>${m}</b> · ${fmt(cr(m).n)} ${t('kTradesN')} · ${fmt(cr(m).v)} ${t('kLot')} · ${isEx(m)?t('xExcl'):t('xIncl')}</span></label>`).join('')+
+   `<div class="foot" style="margin-top:6px">${t('xSum',{v:fmt(ex)})}</div>`;
+  b.querySelectorAll('input[data-xm]').forEach(i=>i.onchange=()=>{const m=i.dataset.xm,s=new Set(DATA.xex||['1001A']);if(i.checked)s.add(m);else s.delete(m);DATA.xex=[...s];render()})
+}
+const xNote=()=>{const ms=Object.keys(R.cross||{}).filter(m=>(DATA.xex||['1001A']).includes(m));return ms.length?t('xSum',{v:fmt(ms.reduce((a,m)=>a+R.cross[m].v,0))})+' ('+ms.join(', ')+')':''};
 function renderReport(){
   const dTxt=dateLong(R.date);
   let h=`<div class="banner"><div class="brand">ACM Exchange</div><div class="ttl">${t('marketData')}</div><div></div></div>`+
-   `<div class="meta"><span>${t('tradeDateLbl')} : ${dTxt}</span><span>${t('chgBasis',{a:R.date,b:R.prevDate||'-'})}</span><span>USDIDR : ${R.usdidr!=null?fmt(R.usdidr):'-'}</span></div>`;
+   `<div class="meta"><span>${t('tradeDateLbl')} : ${dTxt}</span><span>${t('chgBasis',{a:R.date,b:R.prevDate||'-'})}</span><span>USDIDR : ${R.usdidr!=null?fmt(R.usdidr):'-'}</span>${xNote()?`<span>${xNote()}</span>`:''}</div>`;
   R.products.forEach(p=>{
     const dp=decOf(p.code),ds=decOf(p.code,true);
     h+=`<div class="pblock"><div class="pname">${pName(p.code)}</div><div class="ptot"><span>${t('estVolTotals')}<b>${fmt(p.vol)}</b></span><span>${t('oiTotals')}<b>${fmt(p.oi)}</b></span></div><div class="tablewrap"><table class="rt"><thead><tr><th>${t('month')}</th><th>${t('open')}</th><th>${t('high')}</th><th>${t('low')}</th><th>${t('last')}</th><th>${t('change')}</th><th>${t('settle')}</th><th>${t('estVol')}</th><th>${t('priorOi')}</th></tr></thead><tbody>`;
@@ -589,6 +622,15 @@ function renderReport(){
   });
   h+=`<div class="totals"><div class="tbox"><span>${t('dailyVol')} :</span><b>${fmt(R.vol)}</b></div><div class="tbox"><span>${t('dailyOi')} :</span><b>${DATA.oi||R.oi?fmt(R.oi):'-'}</b></div><div class="tbox"><span>${t('monthlyVol')} :</span><b>${R.monthly!=null?fmt(R.monthly):'-'}</b></div></div>`;
   $('report').innerHTML=h;
+}
+function renderSpecial(){
+  const sp=R.special,L0=sp?sp.list:[],ex=L0.filter(x=>x.k!=='manual'),mf=L0.filter(x=>x.k!=='expiry'),sum=a=>a.reduce((s,x)=>s+x.qty,0);
+  const K=[[t('spKex'),fmt(ex.length),fmt(sum(ex))+' '+t('kLot')],[t('spKmf'),fmt(mf.length),fmt(sum(mf))+' '+t('kLot')]];
+  $('spK').innerHTML=K.map(i=>`<div class="kpi"><div class="lbl">${i[0]}</div><div class="v num">${i[1]}</div><div class="n">${i[2]}</div></div>`).join('');
+  const ty=sp?Object.entries(sp.types).sort((a,b)=>b[1]-a[1]).map(([k,v])=>k+' ('+fmt(v)+')').join(' · '):'';
+  $('spTypes').textContent=sp?t('spTypes')+': '+(ty||'-'):t('spNoData');
+  const kl=k=>k==='expiry'?t('spExpiry'):k==='manual'?t('spManual'):t('spBoth');
+  $('spT').innerHTML=L0.length?`<thead><tr><th>${t('spTime')}</th><th>${t('spTid')}</th><th>${t('spCon')}</th><th>${t('spKind')}</th><th>${t('spType')}</th><th>${t('spBuy')}</th><th>${t('spSell')}</th><th>${t('spQty')}</th><th>${t('spPrice')}</th></tr></thead><tbody>`+L0.map(x=>`<tr class="${x.k==='manual'?'s-warn':'s-breach'}"><td>${esc(x.tm)}</td><td>${esc(x.tid)}</td><td>${DATA.prefix}${esc(x.con)}</td><td><span class="pst ${x.k==='manual'?'warn':'breach'}">${kl(x.k)}</span></td><td>${esc(x.tp)}${x.rem?' · '+esc(x.rem):''}</td><td>${esc(x.buy)}</td><td>${esc(x.sell)}</td><td>${fmt(x.qty)}</td><td>${fmtD(x.price,decOf(prodOf(x.con)))}</td></tr>`).join('')+'</tbody>':`<tbody><tr><td class="foot">${sp?t('spNone'):''}</td></tr></tbody>`;
 }
 function renderKpis(){
   const turn=R.oi>0?R.vol/R.oi:null;
@@ -714,10 +756,10 @@ function render(){
   if(!dates.includes(curDate)){const td=Object.keys(DATA.trades).sort();curDate=td.length?td[td.length-1]:dates[dates.length-1]}
   $('selDate').innerHTML=dates.map(d=>`<option value="${d}">${d} · ${dateLong(d).split(',')[0]}</option>`).join('');$('selDate').value=curDate;
   R=buildReport(curDate);
-  renderSlots(R);
+  renderSlots(R);renderCross();
   $('selPrev').innerHTML=R.prevDates.length?R.prevDates.slice().reverse().map(d=>`<option value="${d}">${d}</option>`).join(''):'<option value="">-</option>';$('selPrev').value=R.prevDate;$('selPrev').disabled=!R.prevDates.length;
   $('sub').textContent=`${dateLong(curDate)} · ${fmt(R.n)} ${t('kTradesN')} · ${fmt(R.vol)} ${t('kLot')}`;
-  renderReport();renderKpis();renderVolOi();renderHours();renderCurves();renderInsights();renderManual();renderPos();
+  renderReport();renderKpis();renderSpecial();renderVolOi();renderHours();renderCurves();renderInsights();renderManual();renderPos();
 }
 
 /* ---------- upload ---------- */
@@ -766,7 +808,7 @@ let DL=null;
 const stamp=()=>curDate.replace(/-/g,'');
 function productSummary(){return R.products.map(p=>({code:p.code,vol:p.vol,oi:p.oi,n:p.n,share:R.vol?p.vol/R.vol:0,oiShare:R.oi?p.oi/R.oi:0,turn:p.oi?p.vol/p.oi:null}))}
 function reportAoa(){
-  const a=[['ACM Exchange - '+t('marketData')],[t('tradeDateLbl'),dateLong(R.date)],['USDIDR',R.usdidr!=null?R.usdidr:''],[t('chgBasis',{a:R.date,b:R.prevDate||'-'})],[]];
+  const a=[['ACM Exchange - '+t('marketData')],[t('tradeDateLbl'),dateLong(R.date)],['USDIDR',R.usdidr!=null?R.usdidr:''],[t('chgBasis',{a:R.date,b:R.prevDate||'-'})],...(xNote()?[[xNote()]]:[]),[]];
   R.products.forEach(p=>{
     a.push([pName(p.code)]);a.push([t('estVolTotals'),p.vol,'',t('oiTotals'),p.oi]);
     a.push([t('month'),t('open'),t('high'),t('low'),t('last'),t('change'),t('settle'),t('estVol'),t('priorOi')]);
@@ -790,6 +832,7 @@ function exportXlsx(){
   sh([[t('kPeak'),...prods,'Total'],...keys.map(k=>[hrLabel(k),...prods.map(p=>R.hours[k][p]||0),Object.values(R.hours[k]).reduce((a,b)=>a+b,0)])],t('hoursSheet'),[16,...prods.map(()=>9),9]);
   {const P=posData();if(P){sh([[t('plTitle')+' · '+t('plAsOf',{d:P.asOf||'-'})+' · '+t('plBasis')+': '+t(PLS.basis==='gross'?'plGross':'plNet')],[t('plSub'),t('plAcct'),t('plProdC'),t('plLong'),t('plShort'),t('plNetC'),t('plBase'),t('plRl'),t('plLim'),t('plPctL'),t('plPctR'),t('plStat'),t('plCons')],...P.rows.map(r=>[r.sub,r.accts.join('; '),r.prod,r.long,r.short,r.net,r.base,r.sp?r.sp.rl:'',r.sp?r.sp.pl:'',r.pctL==null?'':Math.round(r.pctL*10000)/10000,r.pctR==null?'':Math.round(r.pctR*10000)/10000,t({ok:'plOk',report:'plRep',warn:'plWarnS',breach:'plBreach',nospec:'plNoSpec'}[r.st]),Object.keys(r.byCon).sort().map(c=>c+' ('+r.byCon[c]+')').join(', ')])],t('plSheet'),[16,34,8,9,9,9,10,10,10,9,9,18,50])}}
   sh([[t('spSym'),t('spName'),t('spCat'),t('spSize'),t('spMargin'),t('spTick'),t('plRl'),t('plLim'),t('spStatus')],...SPEC0.map(b=>{const s=specOf(b.s);return [s.s,s.name,s.cat,s.size,s.margin,s.tick,s.rl,s.pl,s.act?t('spAct'):t('spSusp')]})],t('plSpecSheet'),[8,38,24,16,8,26,10,10,12]);
+  sh([[t('spTitle')+' - '+R.date],[t('spTime'),t('spTid'),t('spCon'),t('spKind'),t('spType'),t('spBuy'),t('spSell'),t('spQty'),t('spPrice'),t('spRem')],...((R.special&&R.special.list)||[]).map(x=>[x.tm,x.tid,DATA.prefix+x.con,x.k==='expiry'?t('spExpiry'):x.k==='manual'?t('spManual'):t('spBoth'),x.tp,x.buy,x.sell,x.qty,x.price,x.rem])],t('spSheet'),[20,26,22,18,20,24,24,8,12,20]);
   sh([[t('analysisTitle')+' - '+R.date],...insightLines().map(x=>[x])],t('analysisSheet'),[160]);
   return {filename:`market-data_${stamp()}.xlsx`,data:XLSX.write(wb,{type:'array',bookType:'xlsx'})};
 }
@@ -802,7 +845,7 @@ function exportPdf(){
   const ensure=h=>{if(y+h>PH-M){doc.addPage();y=M}};
   doc.setFillColor(...GREEN);doc.rect(M,y,PW-2*M,26,'F');
   doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('ACM Exchange',M+8,y+17);doc.text(t('marketData'),PW/2,y+17,{align:'center'});y+=36;
-  doc.setTextColor(20);doc.setFontSize(8);doc.text(`${t('tradeDateLbl')} : ${dateLong(R.date)}`,M,y);doc.text(`USDIDR : ${R.usdidr!=null?fmt(R.usdidr):'-'}`,PW-M,y,{align:'right'});y+=10;doc.setTextColor(90);doc.text(t('chgBasis',{a:R.date,b:R.prevDate||'-'}),M,y);doc.setTextColor(20);y+=10;
+  doc.setTextColor(20);doc.setFontSize(8);doc.text(`${t('tradeDateLbl')} : ${dateLong(R.date)}`,M,y);doc.text(`USDIDR : ${R.usdidr!=null?fmt(R.usdidr):'-'}`,PW-M,y,{align:'right'});y+=10;doc.setTextColor(90);doc.text(t('chgBasis',{a:R.date,b:R.prevDate||'-'}),M,y);doc.setTextColor(20);y+=10;if(xNote()){doc.setTextColor(90);doc.text(xNote(),M,y);doc.setTextColor(20);y+=10}
   R.products.forEach(p=>{
     const dp=decOf(p.code),ds=decOf(p.code,true);
     ensure(70);
