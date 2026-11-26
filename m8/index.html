@@ -1,0 +1,3187 @@
+<!-- SCRIPT PROTEKSI LOGIN -->
+<script>
+  if (localStorage.getItem('mcc_session') !== 'aktif') {
+    window.location.href = '../index.html';
+  }
+</script>
+
+
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>XACM MM Surveillance, Tick Ladder & Scheme Analytics Terminal</title>
+
+<!-- SheetJS (XLS/XLSX/CSV Parser & Exporter) -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<!-- jsPDF & AutoTable for PDF Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  :root, [data-theme="dark"] {
+    --bg-primary: #0a0e14;
+    --bg-secondary: #11161f;
+    --bg-tertiary: #171e2b;
+    --bg-hover: #1e2738;
+    --bg-header: linear-gradient(90deg, #0d131d 0%, #131b29 100%);
+    --bg-th: #141b27;
+    --border-color: #253044;
+    --border-accent: #334361;
+    --text-primary: #e6edf3;
+    --text-heading: #ffffff;
+    --text-secondary: #9aa7b8;
+    --text-muted: #647285;
+    --accent-amber: #f59e0b;
+    --accent-blue: #3b82f6;
+    --accent-cyan: #06b6d4;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-purple: #8b5cf6;
+    --bid-bg: rgba(16, 185, 129, 0.14);
+    --bid-bar: rgba(16, 185, 129, 0.34);
+    --ask-bg: rgba(239, 68, 68, 0.14);
+    --ask-bar: rgba(239, 68, 68, 0.34);
+    --banner-bg: rgba(59, 130, 246, 0.1);
+    --banner-border: rgba(59, 130, 246, 0.35);
+    --banner-text: #bfdbfe;
+    --chart-grid: #1e2738;
+    --chart-tick: #9aa7b8;
+    --shadow-toast: 0 6px 20px rgba(0,0,0,0.5);
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  [data-theme="light"] {
+    --bg-primary: #f1f5f9;
+    --bg-secondary: #ffffff;
+    --bg-tertiary: #f8fafc;
+    --bg-hover: #eef2f6;
+    --bg-header: linear-gradient(90deg, #ffffff 0%, #f1f5f9 100%);
+    --bg-th: #e2e8f0;
+    --border-color: #cbd5e1;
+    --border-accent: #94a3b8;
+    --text-primary: #1e293b;
+    --text-heading: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --accent-amber: #d97706;
+    --accent-blue: #2563eb;
+    --accent-cyan: #0891b2;
+    --accent-green: #059669;
+    --accent-red: #dc2626;
+    --accent-purple: #7c3aed;
+    --bid-bg: rgba(5, 150, 105, 0.10);
+    --bid-bar: rgba(5, 150, 105, 0.25);
+    --ask-bg: rgba(220, 38, 38, 0.10);
+    --ask-bar: rgba(220, 38, 38, 0.25);
+    --banner-bg: rgba(37, 99, 235, 0.08);
+    --banner-border: rgba(37, 99, 235, 0.3);
+    --banner-text: #1e40af;
+    --chart-grid: #e2e8f0;
+    --chart-tick: #475569;
+    --shadow-toast: 0 6px 20px rgba(15, 23, 42, 0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    line-height: 1.45;
+    overflow-x: hidden;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border-accent); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* Header Bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-header);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 18px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-badge {
+    background: var(--accent-amber);
+    color: #fff;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+  [data-theme="dark"] .brand-badge { color: #000; }
+  .brand-title h1 { font-size: 15px; font-weight: 700; letter-spacing: 0.3px; color: var(--text-heading); }
+  .brand-title p { font-size: 11px; color: var(--text-secondary); }
+  .topbar-actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+
+  .switch-group {
+    display: inline-flex;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-accent);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .switch-btn {
+    padding: 5px 9px;
+    font-size: 11px;
+    font-weight: 700;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: var(--font-mono);
+  }
+  .switch-btn.active { background: var(--accent-amber); color: #fff; }
+  [data-theme="dark"] .switch-btn.active { color: #000; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border-accent);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    transition: all 0.15s ease;
+  }
+  .btn:hover { background: var(--bg-hover); border-color: var(--text-secondary); }
+  .btn-primary { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
+  .btn-primary:hover { opacity: 0.92; }
+  .btn-amber { background: rgba(245, 158, 11, 0.15); border-color: var(--accent-amber); color: var(--accent-amber); }
+  .btn-amber:hover { background: rgba(245, 158, 11, 0.25); }
+  .btn-green { background: rgba(16, 185, 129, 0.15); border-color: var(--accent-green); color: var(--accent-green); }
+  .btn-green:hover { background: rgba(16, 185, 129, 0.25); }
+  .btn-red { background: rgba(239, 68, 68, 0.15); border-color: var(--accent-red); color: var(--accent-red); }
+  .btn-red:hover { background: rgba(239, 68, 68, 0.25); }
+  .btn-sm { padding: 4px 8px; font-size: 11px; }
+
+  /* Filter Strip */
+  .control-strip {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px 18px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    align-items: end;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+  }
+  select, input[type="text"], input[type="number"], input[type="date"], textarea {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-accent);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-family: var(--font-sans);
+    outline: none;
+  }
+  select:focus, input:focus, textarea:focus { border-color: var(--accent-amber); }
+  .mono { font-family: var(--font-mono); }
+
+  /* Tabs */
+  .nav-tabs {
+    display: flex;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 18px;
+    gap: 4px;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 12.5px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab-btn:hover { color: var(--text-primary); }
+  .tab-btn.active {
+    color: var(--accent-amber);
+    border-bottom-color: var(--accent-amber);
+    background: rgba(245, 158, 11, 0.06);
+  }
+  .badge-count {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-accent);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-size: 10.5px;
+    font-family: var(--font-mono);
+  }
+  .badge-alert { background: rgba(239, 68, 68, 0.16); border-color: var(--accent-red); color: var(--accent-red); }
+
+  /* Main Container */
+  .main-container { padding: 16px 18px; max-width: 1740px; margin: 0 auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* KPI Cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .kpi-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px 14px;
+    position: relative;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 6px 0 0 6px;
+    background: var(--accent-blue);
+  }
+  .kpi-card.amber::before { background: var(--accent-amber); }
+  .kpi-card.green::before { background: var(--accent-green); }
+  .kpi-card.red::before { background: var(--accent-red); }
+  .kpi-card.cyan::before { background: var(--accent-cyan); }
+  .kpi-card.purple::before { background: var(--accent-purple); }
+
+  .kpi-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.4px; }
+  .kpi-value { font-size: 20px; font-weight: 700; font-family: var(--font-mono); margin: 4px 0; color: var(--text-heading); }
+  .kpi-sub { font-size: 11px; color: var(--text-muted); }
+
+  /* Cards & Grids */
+  .card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 10px 14px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .card-title { font-size: 13px; font-weight: 700; color: var(--text-heading); display: flex; align-items: center; gap: 8px; }
+  .card-body { padding: 14px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .grid-ladder { display: grid; grid-template-columns: 440px 1fr; gap: 16px; align-items: start; }
+  @media (max-width: 1200px) { .grid-ladder { grid-template-columns: 1fr; } }
+  @media (max-width: 1100px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; max-height: 460px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: var(--bg-th);
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.4px;
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-accent);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  tr:hover td { background: var(--bg-hover); }
+  .num { text-align: right; font-family: var(--font-mono); }
+  .center { text-align: center; }
+
+  /* DOM Price Ladder Styling */
+  .ladder-table th { text-align: center; }
+  .ladder-row-bid td.ladder-bid-col {
+    background: var(--bid-bg);
+    color: var(--accent-green);
+    font-weight: 700;
+  }
+  .ladder-row-ask td.ladder-ask-col {
+    background: var(--ask-bg);
+    color: var(--accent-red);
+    font-weight: 700;
+  }
+  .ladder-row-bbo td.ladder-price-col {
+    border-top: 1.5px solid var(--accent-amber);
+    border-bottom: 1.5px solid var(--accent-amber);
+    background: rgba(245, 158, 11, 0.10);
+  }
+  .depth-bar-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 78px;
+  }
+  .depth-bar-wrap.ask-wrap { justify-content: flex-start; }
+  .depth-bar {
+    position: absolute;
+    top: 2px; bottom: 2px;
+    border-radius: 2px;
+    z-index: 0;
+  }
+  .depth-bar.bid { right: 0; background: var(--bid-bar); }
+  .depth-bar.ask { left: 0; background: var(--ask-bar); }
+  .depth-val { position: relative; z-index: 1; font-family: var(--font-mono); font-size: 11.5px; padding: 0 4px; }
+
+  /* Time-Quoting Timeline Strip */
+  .timeline-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-height: 410px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .time-slot-row {
+    display: grid;
+    grid-template-columns: 76px 1fr 125px;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    font-size: 11px;
+  }
+  .time-slot-label { font-family: var(--font-mono); font-weight: 700; color: var(--text-heading); }
+  .time-slot-bars { display: flex; flex-direction: column; gap: 3px; }
+  .bar-lane { display: flex; align-items: center; gap: 6px; height: 13px; }
+  .bar-tag { font-family: var(--font-mono); font-size: 9.5px; width: 24px; font-weight: 700; }
+  .bar-tag.b { color: var(--accent-green); }
+  .bar-tag.a { color: var(--accent-red); }
+  .bar-track { flex: 1; height: 10px; background: var(--bg-primary); border-radius: 2px; overflow: hidden; position: relative; }
+  .bar-fill-b { height: 100%; background: var(--accent-green); }
+  .bar-fill-a { height: 100%; background: var(--accent-red); }
+
+  /* Status Pills */
+  .pill {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+  }
+  .pill-pass { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.4); }
+  .pill-warn { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.4); }
+  .pill-breach { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.4); }
+  .pill-info { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); border: 1px solid rgba(59, 130, 246, 0.4); }
+  .pill-neutral { background: rgba(154, 167, 184, 0.15); color: var(--text-secondary); border: 1px solid rgba(154, 167, 184, 0.35); }
+
+  /* Dropzone */
+  .dropzone {
+    border: 1.5px dashed var(--border-accent);
+    border-radius: 6px;
+    padding: 14px;
+    text-align: center;
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dropzone:hover, .dropzone.dragover { border-color: var(--accent-amber); background: rgba(245, 158, 11, 0.06); }
+  .dropzone h4 { font-size: 12.5px; margin-bottom: 4px; color: var(--text-heading); }
+  .dropzone p { font-size: 11px; color: var(--text-secondary); }
+
+  .chart-box { position: relative; height: 260px; width: 100%; }
+
+  /* Modal */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-accent);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 720px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-header {
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header h3 { color: var(--text-heading); }
+  .modal-body { padding: 16px; }
+  .modal-footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .toast-container { position: fixed; bottom: 16px; right: 16px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--accent-amber);
+    border-top: 1px solid var(--border-accent);
+    border-right: 1px solid var(--border-accent);
+    border-bottom: 1px solid var(--border-accent);
+    color: var(--text-heading);
+    padding: 10px 14px;
+    border-radius: 5px;
+    font-size: 12px;
+    box-shadow: var(--shadow-toast);
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  .info-banner {
+    background: var(--banner-bg);
+    border: 1px solid var(--banner-border);
+    color: var(--banner-text);
+    padding: 9px 12px;
+    border-radius: 5px;
+    font-size: 12px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Top Header -->
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-badge">XACM MCC</span>
+    <div class="brand-title">
+      <h1 data-i18n="appTitle">Market Maker Scheme, Tick Ladder & Post-Trade Surveillance Dashboard</h1>
+      <p data-i18n="appSub">Penyimpanan Lokal Multi-Hari (IndexedDB) • Tick Ladder & Time Quoting Visual • Rule Engine Skema • Excel & PDF</p>
+    </div>
+  </div>
+  <div class="topbar-actions">
+    <div class="switch-group" title="Switch Language / Ganti Bahasa">
+      <button class="switch-btn active" id="btnLangID" onclick="setLanguage('id')">ID</button>
+      <button class="switch-btn" id="btnLangEN" onclick="setLanguage('en')">EN</button>
+    </div>
+    <div class="switch-group" title="Switch Theme / Ganti Tema">
+      <button class="switch-btn active" id="btnThemeDark" onclick="setTheme('dark')">🌙 Dark</button>
+      <button class="switch-btn" id="btnThemeLight" onclick="setTheme('light')">☀️ Light</button>
+    </div>
+
+    <button class="btn btn-amber" onclick="openImportModal()" data-i18n="btnImport">📥 Import Trade / Order</button>
+    <button class="btn btn-green" onclick="exportToExcel()" data-i18n="btnExcel">📊 Export Excel</button>
+    <button class="btn btn-primary" onclick="exportToPDF()" data-i18n="btnPdf">📄 Export PDF</button>
+    <button class="btn" onclick="backupDatabaseJSON()" data-i18n="btnBackup">💾 Backup DB</button>
+  </div>
+</header>
+
+<!-- Filter Strip -->
+<section class="control-strip">
+  <div class="form-group">
+    <label data-i18n="lblFilterPeriod">1. Periode / Trading Day Tersimpan</label>
+    <select id="filterPeriod" onchange="onFilterChange()"></select>
+  </div>
+  <div class="form-group">
+    <label data-i18n="lblFilterMonth">2. Filter Bulan (YYYY-MM)</label>
+    <select id="filterMonth" onchange="onMonthFilterChange()"></select>
+  </div>
+  <div class="form-group">
+    <label data-i18n="lblFilterMM">3. Filter Akun MM (Investor Id)</label>
+    <select id="filterMM" onchange="onFilterChange()"></select>
+  </div>
+  <div class="form-group">
+    <label data-i18n="lblFilterProd">4. Filter Produk / Kontrak</label>
+    <select id="filterProduct" onchange="onFilterChange()"></select>
+  </div>
+  <div class="form-group">
+    <label data-i18n="lblManageMM">5. Kelola Daftar MM (Investor Id)</label>
+    <button class="btn btn-sm" style="width:100%; justify-content:center;" onclick="openMMRegistryModal()">
+      ⚙️ <span data-i18n="btnSelectMM">Pilih Investor Id MM</span> (<span id="mmCountBadge">0</span>)
+    </button>
+  </div>
+</section>
+
+<!-- Navigation Tabs -->
+<nav class="nav-tabs">
+  <button class="tab-btn active" data-tab="tab-overview" onclick="switchTab('tab-overview', this)" data-i18n="tab1">
+    📈 1. Performa & SLA Market Maker
+  </button>
+  <button class="tab-btn" data-tab="tab-order-limit" onclick="switchTab('tab-order-limit', this)" data-i18n="tab2">
+    📋 2. Tick Ladder, Time Visual & Order Limit
+  </button>
+  <button class="tab-btn" data-tab="tab-scheme" onclick="switchTab('tab-scheme', this)" data-i18n="tab3">
+    ⚖️ 3. Konfigurasi Skema & Tier Insentif
+  </button>
+  <button class="tab-btn" data-tab="tab-alerts" onclick="switchTab('tab-alerts', this)">
+    <span data-i18n="tab4">🚨 4. Peringatan & Exception</span> <span id="alertCountBadge" class="badge-count badge-alert">0</span>
+  </button>
+  <button class="tab-btn" data-tab="tab-monthly" onclick="switchTab('tab-monthly', this)">
+    <span data-i18n="tab5">🗄️ 5. Penyimpanan PC & Rekap Bulanan</span> <span id="storageDaysBadge" class="badge-count">0 Hari</span>
+  </button>
+</nav>
+
+<!-- Main Content -->
+<main class="main-container">
+
+  <!-- Empty State Banner -->
+  <div id="emptyStateBanner" class="info-banner" style="display:none;">
+    <div data-i18n="emptyBannerText">
+      <strong>Belum ada data Trade atau Order tersimpan di browser PC ini.</strong> Silakan klik <b>Import Trade / Order</b> untuk mengunggah file laporan XACM (<code>.xls</code>, <code>.xlsx</code>, atau <code>.csv</code>).
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-amber btn-sm" onclick="openImportModal()" data-i18n="btnImportNow">📥 Import File Sekarang</button>
+    </div>
+  </div>
+
+  <!-- TAB 1: OVERVIEW & MM PERFORMANCE -->
+  <div id="tab-overview" class="tab-panel active">
+    <div class="kpi-grid">
+      <div class="kpi-card amber">
+        <div class="kpi-label" data-i18n="kpiVolLbl">Total Volume MM (Lot)</div>
+        <div class="kpi-value" id="kpiTotalVol">0</div>
+        <div class="kpi-sub" id="kpiTotalTrades">-</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label" data-i18n="kpiSlaLbl">Rata-Rata Skor SLA Komposit</div>
+        <div class="kpi-value" id="kpiAvgSla">0.0%</div>
+        <div class="kpi-sub" id="kpiSlaPassCount">-</div>
+      </div>
+      <div class="kpi-card cyan">
+        <div class="kpi-label" data-i18n="kpiTwoWayLbl">Rasio Keseimbangan Two-Way</div>
+        <div class="kpi-value" id="kpiTwoWay">0.0%</div>
+        <div class="kpi-sub" id="kpiBuySellSplit">-</div>
+      </div>
+      <div class="kpi-card purple">
+        <div class="kpi-label" data-i18n="kpiSpreadLbl">Rata-Rata Spread / OTR</div>
+        <div class="kpi-value" id="kpiSpreadOtr">-</div>
+        <div class="kpi-sub" id="kpiOrderStatusSub">-</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label" data-i18n="kpiAlertLbl">Alert Pengawasan / Pelanggaran</div>
+        <div class="kpi-value" id="kpiAlertsTotal">0</div>
+        <div class="kpi-sub" id="kpiSelfMatchSub">-</div>
+      </div>
+    </div>
+
+    <!-- MM Performance Leaderboard Table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" data-i18n="cardMMLeader">📊 Evaluasi Performa & Kepatuhan Skema per Investor Id (Market Maker)</div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span class="pill pill-info" id="activeModeLabel">-</span>
+          <button class="btn btn-sm" onclick="openMMRegistryModal()" data-i18n="btnTagMM">Filter / Tandai Akun MM</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table id="tblMMPerformance">
+            <thead>
+              <tr>
+                <th>Investor Id</th>
+                <th data-i18n="thRole">Peran / Status</th>
+                <th>Broker / Firm</th>
+                <th data-i18n="thProducts">Produk Aktif</th>
+                <th class="num">Buy Lot</th>
+                <th class="num">Sell Lot</th>
+                <th class="num">Total Lot</th>
+                <th class="num">Market Share</th>
+                <th class="num">Two-Way %</th>
+                <th class="num">Uptime %</th>
+                <th class="num">Avg Spread (Tick)</th>
+                <th class="num">OTR</th>
+                <th class="num">SLA Score</th>
+                <th class="center" data-i18n="thTier">Tier / Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyMMPerformance"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" data-i18n="chartVolTitle">📈 Distribusi Volume Buy vs Sell per Investor Id</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-box"><canvas id="chartMMVolume"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" data-i18n="chartHrTitle">⏱️ Aktivitas Eksekusi & Quoting per Jam (Profil Intraday)</div>
+        </div>
+        <div class="card-body">
+          <div class="chart-box"><canvas id="chartHourlyActivity"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contract Breakdown Table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" data-i18n="cardContractTitle">📑 Rincian Performa per Kontrak / Instrument Id</div>
+        <input type="text" id="searchContractInput" data-i18n-placeholder="phSearchContract" placeholder="Cari Instrument / Investor Id..." onkeyup="renderContractBreakdown()" style="width:240px;" />
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table id="tblContractBreakdown">
+            <thead>
+              <tr>
+                <th>Trading Day</th>
+                <th>Investor Id</th>
+                <th>MM?</th>
+                <th>Instrument Id</th>
+                <th class="num">Buy Lot</th>
+                <th class="num">Sell Lot</th>
+                <th class="num">Net Pos</th>
+                <th class="num">Avg Buy Px</th>
+                <th class="num">Avg Sell Px</th>
+                <th class="num" data-i18n="thActiveHr">Jam Aktif</th>
+                <th class="num">Uptime %</th>
+                <th class="num">Spread / Max</th>
+                <th class="num">SLA Score</th>
+                <th class="center" data-i18n="thCompliance">Kepatuhan</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyContractBreakdown"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: TICK LADDER, TIME VISUAL & ORDER LIMIT ANALYSIS -->
+  <div id="tab-order-limit" class="tab-panel">
+    <div class="info-banner">
+      <div data-i18n="orderInfoBanner">
+        <strong>Tick Ladder, Time Quoting Visual & Order Limit Analysis:</strong> Pilih <b>Instrument Id</b>, <b>Investor Id (MM)</b>, dan <b>Rentang Waktu</b> untuk melihat <b>Price / Tick Ladder</b> (kedalaman Bid vs Ask per level harga/tick, jumlah order, serta spread dalam tick) dan <b>Visualisasi Bid/Ask vs Time</b> (bagaimana MM memasang/mengubah kuotasi Bid dan Ask dari waktu ke waktu).
+      </div>
+    </div>
+
+    <!-- Ladder & Time Visual Selector Bar -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" data-i18n="cardLadderSelector">🎛️ Kontrol Tampilan Tick Ladder & Bid/Ask Timeline</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <select id="ladderInstrumentSelect" onchange="renderLadderAndTimeline()" style="min-width:210px;"></select>
+          <select id="ladderInvestorSelect" onchange="renderLadderAndTimeline()" style="min-width:210px;"></select>
+          <select id="ladderGranularity" onchange="renderLadderAndTimeline()" style="width:130px;">
+            <option value="minute" data-i18n="optMinute">Per Menit (MM:SS)</option>
+            <option value="hour" data-i18n="optHour">Per Jam (HH:00)</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="grid-ladder">
+          <!-- LEFT: PRICE / TICK LADDER -->
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <h4 style="font-size:12.5px; color:var(--accent-amber);" data-i18n="ladderTitle">🪜 Price / Tick Ladder (Bid vs Ask Depth)</h4>
+              <span class="pill pill-info" id="ladderMetaBadge">-</span>
+            </div>
+            <div class="table-wrap" style="max-height:420px; border:1px solid var(--border-color); border-radius:5px;">
+              <table class="ladder-table" id="tblTickLadder">
+                <thead>
+                  <tr>
+                    <th data-i18n="thBidQty">Bid Lot</th>
+                    <th data-i18n="thBidOrd">Bid #</th>
+                    <th data-i18n="thTickPx">Price / Tick</th>
+                    <th data-i18n="thAskOrd">Ask #</th>
+                    <th data-i18n="thAskQty">Ask Lot</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyTickLadder"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- RIGHT: TIME-SERIES VISUAL CHART + TIMELINE STRIP -->
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <h4 style="font-size:12.5px; color:var(--accent-cyan);" data-i18n="timeChartTitle">⏱️ Visualisasi Bid & Ask Price / Spread Sepanjang Waktu</h4>
+              <span class="pill pill-pass" id="ladderSpreadBadge">-</span>
+            </div>
+            <div class="chart-box" style="height:215px; margin-bottom:10px;">
+              <canvas id="chartBidAskTime"></canvas>
+            </div>
+            <div style="font-size:11.5px; font-weight:700; color:var(--text-secondary); margin-bottom:5px;" data-i18n="timelineStripTitle">
+              🎞️ Timeline Kuotasi Two-Way per Interval Waktu (Bid vs Ask Presence & Lot)
+            </div>
+            <div class="timeline-grid" id="timelineStripContainer"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PER-TICK / PER-ORDER DETAIL LOG TABLE -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" data-i18n="cardPerTickLog">🔬 Log Detail Order & Perubahan Tick / Harga per Waktu</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <select id="tickSideFilter" onchange="renderPerTickDetailTable()" style="width:120px;">
+            <option value="ALL">Bid & Ask</option>
+            <option value="B">Bid (B)</option>
+            <option value="S">Ask / Sell (S)</option>
+          </select>
+          <input type="text" id="tickSearchInput" data-i18n-placeholder="phSearchTick" placeholder="Filter waktu / harga / status..." onkeyup="renderPerTickDetailTable()" style="width:210px;" />
+        </div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap" style="max-height:340px;">
+          <table id="tblPerTickDetail">
+            <thead>
+              <tr>
+                <th data-i18n="thInsTime">Insert Time</th>
+                <th data-i18n="thUpdTime">Update Time</th>
+                <th>Investor Id</th>
+                <th>Instrument Id</th>
+                <th class="center">B/S</th>
+                <th class="num" data-i18n="thLimPx">Limit Price</th>
+                <th class="num" data-i18n="thTickDelta">Δ Tick vs Prev</th>
+                <th class="num" data-i18n="thOrigLot">Orig Lot</th>
+                <th class="num" data-i18n="thRemLot">Rem Lot</th>
+                <th data-i18n="thOrdType">Type</th>
+                <th data-i18n="thOrdStatus">Status</th>
+                <th>Order Sys Id</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyPerTickDetail"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDER KPIs & CONTRACT SUMMARY -->
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-label" data-i18n="kpiOrdTotLbl">Total Limit Order Diimport</div>
+        <div class="kpi-value" id="kpiOrderTotal">0</div>
+        <div class="kpi-sub" id="kpiOrderBreakdown">-</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label" data-i18n="kpiOrdTwoWayLbl">Jendela Kuotasi Two-Way</div>
+        <div class="kpi-value" id="kpiOrderTwoWayWin">0%</div>
+        <div class="kpi-sub" data-i18n="kpiOrdTwoWaySub">Irisan waktu Bid & Ask aktif bersamaan</div>
+      </div>
+      <div class="kpi-card amber">
+        <div class="kpi-label" data-i18n="kpiOrdSpreadLbl">Tingkat Kepatuhan Spread</div>
+        <div class="kpi-value" id="kpiOrderSpreadComp">0%</div>
+        <div class="kpi-sub" data-i18n="kpiOrdSpreadSub">Memenuhi batas Max Spread Ticks skema</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label" data-i18n="kpiOrdCancelLbl">Rasio Cancel / Reject</div>
+        <div class="kpi-value" id="kpiOrderCancelRate">0%</div>
+        <div class="kpi-sub" id="kpiOrderCancelDetail">-</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" data-i18n="cardOrderSummary">📋 Rekap Limit Order & Kualitas Kuotasi per Investor Id & Kontrak</div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table id="tblOrderSummary">
+            <thead>
+              <tr>
+                <th>Trading Day</th>
+                <th>Investor Id</th>
+                <th>Instrument Id</th>
+                <th class="num">Total Orders</th>
+                <th class="num">Bid Orders</th>
+                <th class="num">Ask Orders</th>
+                <th class="num">Avg Bid Size</th>
+                <th class="num">Avg Ask Size</th>
+                <th class="num">Avg Spread (Ticks)</th>
+                <th class="num">Max Spread Limit</th>
+                <th class="num">Time-in-Spread %</th>
+                <th class="num">OTR</th>
+                <th class="center">Quote Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyOrderSummary"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: SCHEME RULES & INCENTIVE CONFIGURATOR -->
+  <div id="tab-scheme" class="tab-panel">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" data-i18n="cardSchemeParam">⚖️ Parameter Skema Market Maker per Produk</div>
+          <button class="btn btn-amber btn-sm" onclick="saveSchemeRules()" data-i18n="btnSaveScheme">💾 Simpan Aturan Skema</button>
+        </div>
+        <div class="card-body">
+          <p style="color:var(--text-secondary); margin-bottom:12px; font-size:12px;" data-i18n="schemeDesc">
+            Ubah parameter di bawah ini sesuai skema resmi bursa. Seluruh perhitungan skor SLA, deteksi pelanggaran spread/size, dan tier insentif di dashboard akan langsung diperbarui.
+          </p>
+          <div class="table-wrap">
+            <table id="tblSchemeRules">
+              <thead>
+                <tr>
+                  <th data-i18n="thProd">Produk</th>
+                  <th class="num">Tick Size</th>
+                  <th class="num">Max Spread (Ticks)</th>
+                  <th class="num">Min Size (Lot)</th>
+                  <th class="num">Target Uptime %</th>
+                  <th class="num">Min Daily Vol (Lot)</th>
+                  <th class="num">Max OTR</th>
+                </tr>
+              </thead>
+              <tbody id="tbodySchemeRules"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title" data-i18n="cardWeightsTier">🏆 Bobot Penilaian SLA & Struktur Tier Insentif</div>
+          <button class="btn btn-green btn-sm" onclick="saveWeightsAndTiers()" data-i18n="btnSaveWeights">💾 Simpan Bobot & Tier</button>
+        </div>
+        <div class="card-body">
+          <div class="grid-3" style="margin-bottom:14px;">
+            <div class="form-group">
+              <label data-i18n="lblWeightUp">Bobot Uptime / Presence (%)</label>
+              <input type="number" id="weightUptime" value="40" min="0" max="100" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="lblWeightSp">Bobot Spread Compliance (%)</label>
+              <input type="number" id="weightSpread" value="35" min="0" max="100" />
+            </div>
+            <div class="form-group">
+              <label data-i18n="lblWeightSz">Bobot Size & Volume (%)</label>
+              <input type="number" id="weightSize" value="25" min="0" max="100" />
+            </div>
+          </div>
+
+          <h4 style="font-size:12px; color:var(--accent-amber); margin-bottom:8px;" data-i18n="tierMatrixTitle">Matriks Tier Insentif / Fee Rebate Bulanan</h4>
+          <table>
+            <thead>
+              <tr>
+                <th>Tier</th>
+                <th class="num">Min SLA Score (%)</th>
+                <th data-i18n="thIncentive">Insentif / Fee Rebate</th>
+                <th data-i18n="thEvalNote">Keterangan Evaluasi</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="pill pill-pass">TIER 1 (PLATINUM)</span></td>
+                <td class="num"><input type="number" id="tier1Min" value="90" style="width:70px; text-align:right;" /></td>
+                <td data-i18n="t1Inc">100% Maker Fee Rebate + Full Stipend</td>
+                <td data-i18n="t1Note">Memenuhi seluruh SLA utama tanpa critical breach</td>
+              </tr>
+              <tr>
+                <td><span class="pill pill-info">TIER 2 (STANDARD)</span></td>
+                <td class="num"><input type="number" id="tier2Min" value="80" style="width:70px; text-align:right;" /></td>
+                <td data-i18n="t2Inc">75% Maker Fee Rebate + Pro-Rata Stipend</td>
+                <td data-i18n="t2Note">Memenuhi batas minimum kelulusan skema MM</td>
+              </tr>
+              <tr>
+                <td><span class="pill pill-warn">TIER 3 (PROBATION)</span></td>
+                <td class="num"><input type="number" id="tier3Min" value="65" style="width:70px; text-align:right;" /></td>
+                <td data-i18n="t3Inc">25% Maker Fee Rebate (No Stipend)</td>
+                <td data-i18n="t3Note">Peringatan evaluasi; wajib perbaikan bulan berikutnya</td>
+              </tr>
+              <tr>
+                <td><span class="pill pill-breach">NON-COMPLIANT</span></td>
+                <td class="num">&lt; <span id="tier3Label">65</span>%</td>
+                <td data-i18n="t4Inc">0% Rebate / Clawback / Review Status MM</td>
+                <td data-i18n="t4Note">Gagal memenuhi kewajiban minimum skema</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: SURVEILLANCE ALERTS & EXCEPTIONS -->
+  <div id="tab-alerts" class="tab-panel">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" data-i18n="cardAlertLog">🚨 Log Peringatan Pengawasan Otomatis (Pelanggaran Skema & Integritas Pasar)</div>
+        <div style="display:flex; gap:8px;">
+          <select id="filterAlertSeverity" onchange="renderAlertsTable()" style="width:160px;">
+            <option value="ALL" data-i18n="optAllSev">Semua Tingkat</option>
+            <option value="CRITICAL">CRITICAL</option>
+            <option value="WARNING">WARNING</option>
+            <option value="INFO">INFO</option>
+          </select>
+          <button class="btn btn-amber btn-sm" onclick="openOverrideModal()" data-i18n="btnAddOverride">➕ Catat Exception / Override</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table id="tblAlerts">
+            <thead>
+              <tr>
+                <th data-i18n="thCode">Kode</th>
+                <th>Trading Day</th>
+                <th data-i18n="thSeverity">Tingkat</th>
+                <th>Investor Id</th>
+                <th>Instrument Id</th>
+                <th data-i18n="thCategory">Kategori Pelanggaran / Anomali</th>
+                <th data-i18n="thDetail">Detail & Nilai Aktual vs Skema</th>
+                <th class="center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyAlerts"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" data-i18n="cardAuditOverride">📝 Audit Trail Pengecualian & Override SLA (Halt / Volatilitas / Maintenance)</div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th data-i18n="thDate">Tanggal</th>
+                <th>Investor Id</th>
+                <th data-i18n="thProd">Produk</th>
+                <th data-i18n="thReason">Kode Alasan</th>
+                <th class="num" data-i18n="thCredit">Penyesuaian Skor (%)</th>
+                <th data-i18n="thEvidence">Bukti / Referensi Log</th>
+                <th data-i18n="thCreated">Waktu Dicatat</th>
+                <th class="center" data-i18n="thAction">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyOverrides"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: MULTI-DAY STORAGE & MONTHLY SUMMARY -->
+  <div id="tab-monthly" class="tab-panel">
+    <div class="info-banner">
+      <div data-i18n="storageBanner">
+        <strong>Penyimpanan Lokal Multi-Hari (IndexedDB Browser PC):</strong> Setiap file Trade dan Order yang Anda unggah otomatis disimpan berdasarkan <code>Trading Day</code> di database lokal browser PC Anda. Anda dapat mengunggah file harian secara bertahap dan langsung melihat rekap konsolidasi bulanan tanpa menggabungkan file Excel manual.
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-sm" onclick="restoreDatabaseJSON()" data-i18n="btnRestore">📂 Restore Backup</button>
+        <button class="btn btn-red btn-sm" onclick="clearAllStorage()" data-i18n="btnClearAll">🗑️ Hapus Semua Data</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" data-i18n="cardMonthlySum">📅 Rekap Konsolidasi Bulanan per Investor Id (Monthly MM Summary)</div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table id="tblMonthlySummary">
+            <thead>
+              <tr>
+                <th data-i18n="thMonth">Bulan</th>
+                <th>Investor Id</th>
+                <th data-i18n="thMMStatus">Status MM</th>
+                <th class="num" data-i18n="thActiveDays">Hari Aktif</th>
+                <th class="num">Total Buy Lot</th>
+                <th class="num">Total Sell Lot</th>
+                <th class="num">Total Volume</th>
+                <th class="num">Avg Two-Way %</th>
+                <th class="num">Avg Uptime %</th>
+                <th class="num">Avg Spread (Tick)</th>
+                <th class="num">Avg Monthly SLA</th>
+                <th class="center" data-i18n="thMonthlyTier">Rekomendasi Tier Bulanan</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyMonthlySummary"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" data-i18n="cardStoredDays">🗄️ Manajemen Dataset Harian Tersimpan di PC</div>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Trading Day</th>
+                <th data-i18n="thMonth">Bulan</th>
+                <th data-i18n="thTradeFile">Nama File Trade</th>
+                <th class="num" data-i18n="thTradeRows">Baris Trade</th>
+                <th data-i18n="thOrderFile">Nama File Order</th>
+                <th class="num" data-i18n="thOrderRows">Baris Order</th>
+                <th data-i18n="thImportTime">Waktu Import</th>
+                <th class="center" data-i18n="thAction">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyStoredDays"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL: IMPORT FILES -->
+<div id="modalImport" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 style="font-size:14px;" data-i18n="modalImportTitle">📥 Import Data Trade & Order XACM (Excel .xls/.xlsx atau .csv)</h3>
+      <button class="btn btn-sm" onclick="closeModal('modalImport')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="grid-2" style="margin-bottom:14px;">
+        <div>
+          <label style="font-size:11px; font-weight:700; color:var(--accent-amber); display:block; margin-bottom:6px;" data-i18n="lblTradeDrop">
+            1. FILE TRADE (Wajib / Utama)
+          </label>
+          <div class="dropzone" id="dropTrade" onclick="document.getElementById('inputTradeFile').click()">
+            <h4 data-i18n="dropTitle">Klik atau Tarik File ke Sini</h4>
+            <p data-i18n="dropTradeSub">Format: .xls, .xlsx, .csv (Kolom: Investor Id, Instrument Id, B/S, Price, Volume, Trade Time, Trading Day)</p>
+            <div id="tradeFileSelected" style="margin-top:8px; color:var(--accent-green); font-weight:600; font-size:11.5px;"></div>
+          </div>
+          <input type="file" id="inputTradeFile" accept=".xls,.xlsx,.csv" style="display:none;" onchange="handleFileSelect(event, 'trade')" />
+        </div>
+
+        <div>
+          <label style="font-size:11px; font-weight:700; color:var(--accent-cyan); display:block; margin-bottom:6px;" data-i18n="lblOrderDrop">
+            2. FILE ORDER / LIMIT (Opsional / Pelengkap Quoting)
+          </label>
+          <div class="dropzone" id="dropOrder" onclick="document.getElementById('inputOrderFile').click()">
+            <h4 data-i18n="dropTitle">Klik atau Tarik File ke Sini</h4>
+            <p data-i18n="dropOrderSub">Format: .xls, .xlsx, .csv (Kolom: Investor Id, Instrument Id, Limit Price, Order Status, Insert Time, Update Time)</p>
+            <div id="orderFileSelected" style="margin-top:8px; color:var(--accent-cyan); font-weight:600; font-size:11.5px;"></div>
+          </div>
+          <input type="file" id="inputOrderFile" accept=".xls,.xlsx,.csv" style="display:none;" onchange="handleFileSelect(event, 'order')" />
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px;">
+        <label data-i18n="lblOverrideDay">Override Trading Day Manual (Kosongkan agar otomatis dibaca dari kolom Trading Day di file)</label>
+        <input type="text" id="importOverrideDay" placeholder="20261113" />
+      </div>
+
+      <div style="background:var(--bg-primary); padding:10px; border-radius:5px; border:1px solid var(--border-color); font-size:11.5px; color:var(--text-secondary);" data-i18n="importNote">
+        💡 <b>Catatan:</b> Jika file Order kosong (0 baris data) atau belum tersedia, sistem tetap akan memproses file Trade secara penuh dan menandai analisis Order pada hari tersebut sebagai <i>Trade-Based Estimation</i>.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modalImport')" data-i18n="btnCancel">Batal</button>
+      <button class="btn btn-amber" onclick="processImportedFiles()" data-i18n="btnProcessSave">⚡ Proses & Simpan ke Database PC</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: MM REGISTRY -->
+<div id="modalMMRegistry" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 style="font-size:14px;" data-i18n="modalMMTitle">⚙️ Konfigurasi Akun Market Maker (Investor Id)</h3>
+      <button class="btn btn-sm" onclick="closeModal('modalMMRegistry')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;" data-i18n="modalMMDesc">
+        Centang <b>Investor Id</b> yang berstatus resmi sebagai <b>Market Maker (MM)</b>. Anda juga dapat menambahkan label/nama alias MM untuk mempermudah identifikasi di laporan bulanan.
+      </p>
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <input type="text" id="newManualMMId" data-i18n-placeholder="phManualId" placeholder="Tambah Investor Id manual (mis. 10015550003)" style="flex:1;" />
+        <input type="text" id="newManualMMName" data-i18n-placeholder="phManualAlias" placeholder="Alias / Nama MM (mis. MM-Alpha)" style="flex:1;" />
+        <button class="btn btn-amber btn-sm" onclick="addManualMM()" data-i18n="btnAdd">+ Tambah</button>
+      </div>
+      <div class="table-wrap" style="max-height:320px;">
+        <table>
+          <thead>
+            <tr>
+              <th class="center" data-i18n="thMMCheck">Status MM</th>
+              <th>Investor Id</th>
+              <th data-i18n="thBrokerDet">Broker / Firm Terdeteksi</th>
+              <th data-i18n="thAlias">Alias / Label MM</th>
+              <th class="num" data-i18n="thTotalLotRec">Total Lot Tercatat</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyMMRegistry"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-green" onclick="saveMMRegistry()" data-i18n="btnSaveMM">💾 Simpan Daftar MM & Terapkan Filter</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD OVERRIDE / EXCEPTION -->
+<div id="modalOverride" class="modal-backdrop">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <h3 style="font-size:14px;" data-i18n="modalOvTitle">➕ Catat Pengecualian / Override SLA</h3>
+      <button class="btn btn-sm" onclick="closeModal('modalOverride')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Trading Day (YYYYMMDD)</label>
+        <input type="text" id="ovDay" placeholder="20261113" />
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>Investor Id (MM)</label>
+        <select id="ovInvestorId"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label data-i18n="lblOvProd">Produk / Kontrak</label>
+        <input type="text" id="ovProduct" placeholder="ALL / NSI / NPT / NCP / 2SO" value="ALL" />
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label data-i18n="lblOvReason">Kode Alasan Pengecualian</label>
+        <select id="ovReason">
+          <option value="EXCHANGE_HALT">EXCHANGE_HALT (Trading Halt / Circuit Breaker)</option>
+          <option value="VOLATILITY_SPIKE">VOLATILITY_SPIKE (Extreme Volatility Relaxation)</option>
+          <option value="SYSTEM_FEED_ISSUE">SYSTEM_FEED_ISSUE (Vendor / FIX Connectivity Issue)</option>
+          <option value="APPROVED_MAINTENANCE">APPROVED_MAINTENANCE (Scheduled Maintenance)</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label data-i18n="lblOvCredit">Penambahan Kredit Skor SLA (%)</label>
+        <input type="number" id="ovCredit" value="5" min="0" max="50" step="0.5" />
+      </div>
+      <div class="form-group">
+        <label data-i18n="lblOvEvidence">Referensi Bukti / Log FIX / Catatan Audit</label>
+        <textarea id="ovEvidence" rows="2" placeholder="Ticket MCC #2026-114, FIX disconnect log 14:05-14:20"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modalOverride')" data-i18n="btnCancel">Batal</button>
+      <button class="btn btn-amber" onclick="saveOverrideEntry()" data-i18n="btnSaveAudit">Simpan Audit Log</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="inputRestoreJSON" accept=".json" style="display:none;" onchange="handleRestoreJSON(event)" />
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ============================================================================
+// 0. BILINGUAL DICTIONARY (INDONESIAN & ENGLISH) + THEME ENGINE
+// ============================================================================
+const I18N = {
+  id: {
+    appTitle: "Market Maker Scheme, Tick Ladder & Post-Trade Surveillance Dashboard",
+    appSub: "Penyimpanan Lokal Multi-Hari (IndexedDB) • Tick Ladder & Time Quoting Visual • Rule Engine Skema • Excel & PDF",
+    btnImport: "📥 Import Trade / Order",
+    btnExcel: "📊 Export Excel",
+    btnPdf: "📄 Export PDF",
+    btnBackup: "💾 Backup DB",
+    lblFilterPeriod: "1. Periode / Trading Day Tersimpan",
+    lblFilterMonth: "2. Filter Bulan (YYYY-MM)",
+    lblFilterMM: "3. Filter Akun MM (Investor Id)",
+    lblFilterProd: "4. Filter Produk / Kontrak",
+    lblManageMM: "5. Kelola Daftar MM (Investor Id)",
+    btnSelectMM: "Pilih Investor Id MM",
+    tab1: "📈 1. Performa & SLA Market Maker",
+    tab2: "📋 2. Tick Ladder, Time Visual & Order Limit",
+    tab3: "⚖️ 3. Konfigurasi Skema & Tier Insentif",
+    tab4: "🚨 4. Peringatan & Exception",
+    tab5: "🗄️ 5. Penyimpanan PC & Rekap Bulanan",
+    emptyBannerText: "<strong>Belum ada data Trade atau Order tersimpan di browser PC ini.</strong> Silakan klik <b>Import Trade / Order</b> untuk mengunggah file laporan XACM (<code>.xls</code>, <code>.xlsx</code>, atau <code>.csv</code>).",
+    btnImportNow: "📥 Import File Sekarang",
+    kpiVolLbl: "Total Volume MM (Lot)",
+    kpiSlaLbl: "Rata-Rata Skor SLA Komposit",
+    kpiTwoWayLbl: "Rasio Keseimbangan Two-Way",
+    kpiSpreadLbl: "Rata-Rata Spread / OTR",
+    kpiAlertLbl: "Alert Pengawasan / Pelanggaran",
+    cardMMLeader: "📊 Evaluasi Performa & Kepatuhan Skema per Investor Id (Market Maker)",
+    btnTagMM: "Filter / Tandai Akun MM",
+    thRole: "Peran / Status",
+    thProducts: "Produk Aktif",
+    thTier: "Tier / Status",
+    chartVolTitle: "📈 Distribusi Volume Buy vs Sell per Investor Id",
+    chartHrTitle: "⏱️ Aktivitas Eksekusi & Quoting per Jam (Profil Intraday)",
+    cardContractTitle: "📑 Rincian Performa per Kontrak / Instrument Id",
+    phSearchContract: "Cari Instrument / Investor Id...",
+    thActiveHr: "Jam Aktif",
+    thCompliance: "Kepatuhan",
+    orderInfoBanner: "<strong>Tick Ladder, Time Quoting Visual & Order Limit Analysis:</strong> Pilih <b>Instrument Id</b>, <b>Investor Id (MM)</b>, dan <b>Rentang Waktu</b> untuk melihat <b>Price / Tick Ladder</b> (kedalaman Bid vs Ask per level harga/tick, jumlah order, serta spread dalam tick) dan <b>Visualisasi Bid/Ask vs Time</b> (bagaimana MM memasang/mengubah kuotasi Bid dan Ask dari waktu ke waktu).",
+    cardLadderSelector: "🎛️ Kontrol Tampilan Tick Ladder & Bid/Ask Timeline",
+    optMinute: "Per Menit (HH:MM)",
+    optHour: "Per Jam (HH:00)",
+    ladderTitle: "🪜 Price / Tick Ladder (Bid vs Ask Depth)",
+    thBidQty: "Bid Lot",
+    thBidOrd: "Bid #",
+    thTickPx: "Price / Tick",
+    thAskOrd: "Ask #",
+    thAskQty: "Ask Lot",
+    timeChartTitle: "⏱️ Visualisasi Bid & Ask Price / Spread Sepanjang Waktu",
+    timelineStripTitle: "🎞️ Timeline Kuotasi Two-Way per Interval Waktu (Bid vs Ask Presence & Lot)",
+    cardPerTickLog: "🔬 Log Detail Order & Perubahan Tick / Harga per Waktu",
+    phSearchTick: "Filter waktu / harga / status...",
+    thInsTime: "Insert Time",
+    thUpdTime: "Update Time",
+    thLimPx: "Limit Price",
+    thTickDelta: "Δ Tick vs Prev",
+    thOrigLot: "Orig Lot",
+    thRemLot: "Rem Lot",
+    thOrdType: "Type",
+    thOrdStatus: "Status",
+    kpiOrdTotLbl: "Total Limit Order Diimport",
+    kpiOrdTwoWayLbl: "Jendela Kuotasi Two-Way",
+    kpiOrdTwoWaySub: "Irisan waktu Bid & Ask aktif bersamaan",
+    kpiOrdSpreadLbl: "Tingkat Kepatuhan Spread",
+    kpiOrdSpreadSub: "Memenuhi batas Max Spread Ticks skema",
+    kpiOrdCancelLbl: "Rasio Cancel / Reject",
+    cardOrderSummary: "📋 Rekap Limit Order & Kualitas Kuotasi per Investor Id & Kontrak",
+    cardSchemeParam: "⚖️ Parameter Skema Market Maker per Produk",
+    btnSaveScheme: "💾 Simpan Aturan Skema",
+    schemeDesc: "Ubah parameter di bawah ini sesuai skema resmi bursa. Seluruh perhitungan skor SLA, deteksi pelanggaran spread/size, dan tier insentif di dashboard akan langsung diperbarui.",
+    thProd: "Produk",
+    cardWeightsTier: "🏆 Bobot Penilaian SLA & Struktur Tier Insentif",
+    btnSaveWeights: "💾 Simpan Bobot & Tier",
+    lblWeightUp: "Bobot Uptime / Presence (%)",
+    lblWeightSp: "Bobot Spread Compliance (%)",
+    lblWeightSz: "Bobot Size & Volume (%)",
+    tierMatrixTitle: "Matriks Tier Insentif / Fee Rebate Bulanan",
+    thIncentive: "Insentif / Fee Rebate",
+    thEvalNote: "Keterangan Evaluasi",
+    t1Inc: "100% Maker Fee Rebate + Full Stipend",
+    t1Note: "Memenuhi seluruh SLA utama tanpa critical breach",
+    t2Inc: "75% Maker Fee Rebate + Pro-Rata Stipend",
+    t2Note: "Memenuhi batas minimum kelulusan skema MM",
+    t3Inc: "25% Maker Fee Rebate (No Stipend)",
+    t3Note: "Peringatan evaluasi; wajib perbaikan bulan berikutnya",
+    t4Inc: "0% Rebate / Clawback / Review Status MM",
+    t4Note: "Gagal memenuhi kewajiban minimum skema",
+    cardAlertLog: "🚨 Log Peringatan Pengawasan Otomatis (Pelanggaran Skema & Integritas Pasar)",
+    optAllSev: "Semua Tingkat",
+    btnAddOverride: "➕ Catat Exception / Override",
+    thCode: "Kode",
+    thSeverity: "Tingkat",
+    thCategory: "Kategori Pelanggaran / Anomali",
+    thDetail: "Detail & Nilai Aktual vs Skema",
+    cardAuditOverride: "📝 Audit Trail Pengecualian & Override SLA (Halt / Volatilitas / Maintenance)",
+    thDate: "Tanggal",
+    thReason: "Kode Alasan",
+    thCredit: "Penyesuaian Skor (%)",
+    thEvidence: "Bukti / Referensi Log",
+    thCreated: "Waktu Dicatat",
+    thAction: "Aksi",
+    storageBanner: "<strong>Penyimpanan Lokal Multi-Hari (IndexedDB Browser PC):</strong> Setiap file Trade dan Order yang Anda unggah otomatis disimpan berdasarkan <code>Trading Day</code> di database lokal browser PC Anda. Anda dapat mengunggah file harian secara bertahap dan langsung melihat rekap konsolidasi bulanan tanpa menggabungkan file Excel manual.",
+    btnRestore: "📂 Restore Backup",
+    btnClearAll: "🗑️ Hapus Semua Data",
+    cardMonthlySum: "📅 Rekap Konsolidasi Bulanan per Investor Id (Monthly MM Summary)",
+    thMonth: "Bulan",
+    thMMStatus: "Status MM",
+    thActiveDays: "Hari Aktif",
+    thMonthlyTier: "Rekomendasi Tier Bulanan",
+    cardStoredDays: "🗄️ Manajemen Dataset Harian Tersimpan di PC",
+    thTradeFile: "Nama File Trade",
+    thTradeRows: "Baris Trade",
+    thOrderFile: "Nama File Order",
+    thOrderRows: "Baris Order",
+    thImportTime: "Waktu Import",
+    modalImportTitle: "📥 Import Data Trade & Order XACM (Excel .xls/.xlsx atau .csv)",
+    lblTradeDrop: "1. FILE TRADE (Wajib / Utama)",
+    lblOrderDrop: "2. FILE ORDER / LIMIT (Opsional / Pelengkap Quoting)",
+    dropTitle: "Klik atau Tarik File ke Sini",
+    dropTradeSub: "Format: .xls, .xlsx, .csv (Kolom: Investor Id, Instrument Id, B/S, Price, Volume, Trade Time, Trading Day)",
+    dropOrderSub: "Format: .xls, .xlsx, .csv (Kolom: Investor Id, Instrument Id, Limit Price, Order Status, Insert Time, Update Time)",
+    lblOverrideDay: "Override Trading Day Manual (Kosongkan agar otomatis dibaca dari kolom Trading Day di file)",
+    importNote: "💡 <b>Catatan:</b> Jika file Order kosong (0 baris data) atau belum tersedia, sistem tetap akan memproses file Trade secara penuh dan menandai analisis Order pada hari tersebut sebagai <i>Trade-Based Estimation</i>.",
+    btnCancel: "Batal",
+    btnProcessSave: "⚡ Proses & Simpan ke Database PC",
+    modalMMTitle: "⚙️ Konfigurasi Akun Market Maker (Investor Id)",
+    modalMMDesc: "Centang <b>Investor Id</b> yang berstatus resmi sebagai <b>Market Maker (MM)</b>. Anda juga dapat menambahkan label/nama alias MM untuk mempermudah identifikasi di laporan bulanan.",
+    phManualId: "Tambah Investor Id manual (mis. 10015550003)",
+    phManualAlias: "Alias / Nama MM (mis. MM-Alpha)",
+    btnAdd: "+ Tambah",
+    thMMCheck: "Status MM",
+    thBrokerDet: "Broker / Firm Terdeteksi",
+    thAlias: "Alias / Label MM",
+    thTotalLotRec: "Total Lot Tercatat",
+    btnSaveMM: "💾 Simpan Daftar MM & Terapkan Filter",
+    modalOvTitle: "➕ Catat Pengecualian / Override SLA",
+    lblOvProd: "Produk / Kontrak",
+    lblOvReason: "Kode Alasan Pengecualian",
+    lblOvCredit: "Penambahan Kredit Skor SLA (%)",
+    lblOvEvidence: "Referensi Bukti / Log FIX / Catatan Audit",
+    btnSaveAudit: "Simpan Audit Log",
+    allDaysOpt: (n) => `Semua Hari Tersimpan (${n} Hari)`,
+    allMonthsOpt: (n) => `Semua Bulan (${n})`,
+    allMMOpt: (n) => `Semua Designated MM (${n} Akun)`,
+    allInvOpt: (n) => `Semua Investor Id (${n} Akun)`,
+    allProdOpt: (n) => `Semua Produk (${n})`,
+    allInstrLadderOpt: "Semua Instrument Aktif",
+    allInvLadderOpt: "Semua Investor Aktif (Filter Saat Ini)",
+    daysBadge: (n) => `${n} Hari`,
+    modeFull: "Mode: Evaluasi Order Book + Trade Lengkap",
+    modeProxy: "Mode: Estimasi Berbasis Trade (Import Order File untuk Limit Spread & OTR)",
+    noMatchData: "Tidak ada data yang cocok dengan filter saat ini.",
+    noContractData: "Tidak ada data kontrak.",
+    noOrderData: "Belum ada baris data Limit Order pada periode ini (File Order berisi 0 baris atau belum diimport).",
+    noAlertData: "Tidak ada alert pelanggaran terdeteksi pada filter ini.",
+    noOverrideData: "Belum ada pencatatan override / pengecualian SLA.",
+    noMonthlyData: "Belum ada data konsolidasi bulanan.",
+    emptyDbText: "Database lokal masih kosong.",
+    deleteDayBtn: "Hapus Hari Ini",
+    deleteBtn: "Hapus",
+    chartBuyLabel: "Volume Buy (Lot)",
+    chartSellLabel: "Volume Sell (Lot)",
+    chartHourlyLabel: "Volume Eksekusi MM per Jam (Lot)",
+    chartBidPxLabel: "Best/Avg Bid Price",
+    chartAskPxLabel: "Best/Avg Ask Price",
+    bothSidesBadge: "2-WAY ACTIVE",
+    oneSideBadge: "1-SIDE ONLY",
+    idleBadge: "NO QUOTE"
+  },
+  en: {
+    appTitle: "Market Maker Scheme, Tick Ladder & Post-Trade Surveillance Dashboard",
+    appSub: "Multi-Day Local Storage (IndexedDB) • Tick Ladder & Time Quoting Visual • Scheme Rule Engine • Excel & PDF",
+    btnImport: "📥 Import Trade / Order",
+    btnExcel: "📊 Export Excel",
+    btnPdf: "📄 Export PDF",
+    btnBackup: "💾 Backup DB",
+    lblFilterPeriod: "1. Saved Period / Trading Day",
+    lblFilterMonth: "2. Filter Month (YYYY-MM)",
+    lblFilterMM: "3. Filter MM Account (Investor Id)",
+    lblFilterProd: "4. Filter Product / Contract",
+    lblManageMM: "5. Manage MM List (Investor Id)",
+    btnSelectMM: "Select MM Investor Ids",
+    tab1: "📈 1. MM Performance & SLA Overview",
+    tab2: "📋 2. Tick Ladder, Time Visual & Order Limit",
+    tab3: "⚖️ 3. Scheme Rules & Incentive Tiers",
+    tab4: "🚨 4. Surveillance Alerts & Exceptions",
+    tab5: "🗄️ 5. PC Storage & Monthly Summary",
+    emptyBannerText: "<strong>No Trade or Order data stored in this PC browser yet.</strong> Click <b>Import Trade / Order</b> to upload XACM report files (<code>.xls</code>, <code>.xlsx</code>, or <code>.csv</code>).",
+    btnImportNow: "📥 Import Files Now",
+    kpiVolLbl: "Total MM Volume (Lots)",
+    kpiSlaLbl: "Avg Composite SLA Score",
+    kpiTwoWayLbl: "Two-Way Balance Ratio",
+    kpiSpreadLbl: "Avg Effective Spread / OTR",
+    kpiAlertLbl: "Surveillance Alerts / Breaches",
+    cardMMLeader: "📊 Scheme Performance & Compliance Evaluation per Investor Id (Market Maker)",
+    btnTagMM: "Filter / Designate MM Accounts",
+    thRole: "Role / Status",
+    thProducts: "Active Products",
+    thTier: "Tier / Status",
+    chartVolTitle: "📈 Buy vs Sell Volume Distribution per Investor Id",
+    chartHrTitle: "⏱️ Hourly Execution & Quoting Activity (Intraday Profile)",
+    cardContractTitle: "📑 Performance Breakdown per Contract / Instrument Id",
+    phSearchContract: "Search Instrument / Investor Id...",
+    thActiveHr: "Active Hrs",
+    thCompliance: "Compliance",
+    orderInfoBanner: "<strong>Tick Ladder, Time Quoting Visual & Order Limit Analysis:</strong> Select an <b>Instrument Id</b>, <b>Investor Id (MM)</b>, and <b>Time Bucket</b> to inspect the <b>Price / Tick Ladder</b> (Bid vs Ask depth per price/tick level, order counts, and tick spread) and the <b>Bid/Ask vs Time Visualization</b> (how MM quotes Bid and Ask over time).",
+    cardLadderSelector: "🎛️ Tick Ladder & Bid/Ask Timeline Controls",
+    optMinute: "Per Minute (HH:MM)",
+    optHour: "Per Hour (HH:00)",
+    ladderTitle: "🪜 Price / Tick Ladder (Bid vs Ask Depth)",
+    thBidQty: "Bid Lot",
+    thBidOrd: "Bid #",
+    thTickPx: "Price / Tick",
+    thAskOrd: "Ask #",
+    thAskQty: "Ask Lot",
+    timeChartTitle: "⏱️ Bid & Ask Price / Spread Visualization Over Time",
+    timelineStripTitle: "🎞️ Two-Way Quoting Timeline per Time Bucket (Bid vs Ask Presence & Lots)",
+    cardPerTickLog: "🔬 Per-Order & Tick / Price Movement Detail Log",
+    phSearchTick: "Filter time / price / status...",
+    thInsTime: "Insert Time",
+    thUpdTime: "Update Time",
+    thLimPx: "Limit Price",
+    thTickDelta: "Δ Tick vs Prev",
+    thOrigLot: "Orig Lot",
+    thRemLot: "Rem Lot",
+    thOrdType: "Type",
+    thOrdStatus: "Status",
+    kpiOrdTotLbl: "Total Limit Orders Imported",
+    kpiOrdTwoWayLbl: "Two-Way Quote Windows",
+    kpiOrdTwoWaySub: "Concurrent active Bid & Ask time windows",
+    kpiOrdSpreadLbl: "Spread Compliance Rate",
+    kpiOrdSpreadSub: "Within scheme Max Spread Ticks threshold",
+    kpiOrdCancelLbl: "Cancel / Reject Rate",
+    cardOrderSummary: "📋 Limit Order & Quoting Quality Summary per Investor Id & Contract",
+    cardSchemeParam: "⚖️ Market Maker Scheme Parameters per Product",
+    btnSaveScheme: "💾 Save Scheme Rules",
+    schemeDesc: "Configure the parameters below according to the official exchange scheme. All SLA scores, spread/size breach detections, and incentive tiers recalculate immediately.",
+    thProd: "Product",
+    cardWeightsTier: "🏆 SLA Scoring Weights & Incentive Tier Structure",
+    btnSaveWeights: "💾 Save Weights & Tiers",
+    lblWeightUp: "Uptime / Presence Weight (%)",
+    lblWeightSp: "Spread Compliance Weight (%)",
+    lblWeightSz: "Size & Volume Weight (%)",
+    tierMatrixTitle: "Monthly Incentive / Fee Rebate Tier Matrix",
+    thIncentive: "Incentive / Fee Rebate",
+    thEvalNote: "Evaluation Notes",
+    t1Inc: "100% Maker Fee Rebate + Full Stipend",
+    t1Note: "Meets all primary SLAs with zero critical breaches",
+    t2Inc: "75% Maker Fee Rebate + Pro-Rata Stipend",
+    t2Note: "Meets minimum passing threshold of MM scheme",
+    t3Inc: "25% Maker Fee Rebate (No Stipend)",
+    t3Note: "Probationary warning; improvement required next month",
+    t4Inc: "0% Rebate / Clawback / MM Status Review",
+    t4Note: "Failed to meet minimum scheme obligations",
+    cardAlertLog: "🚨 Automated Surveillance Alert Log (Scheme Breaches & Market Integrity)",
+    optAllSev: "All Severities",
+    btnAddOverride: "➕ Log Exception / Override",
+    thCode: "Code",
+    thSeverity: "Severity",
+    thCategory: "Breach / Anomaly Category",
+    thDetail: "Detail & Actual vs Scheme Threshold",
+    cardAuditOverride: "📝 SLA Exception & Override Audit Trail (Halt / Volatility / Maintenance)",
+    thDate: "Date",
+    thReason: "Reason Code",
+    thCredit: "SLA Score Credit (%)",
+    thEvidence: "Evidence / FIX Log Reference",
+    thCreated: "Logged At",
+    thAction: "Action",
+    storageBanner: "<strong>Multi-Day Local Storage (PC Browser IndexedDB):</strong> Every uploaded Trade and Order file is automatically stored by <code>Trading Day</code> in your PC browser's local database. Upload daily files incrementally to view consolidated monthly summaries without manually merging spreadsheets.",
+    btnRestore: "📂 Restore Backup",
+    btnClearAll: "🗑️ Clear All Data",
+    cardMonthlySum: "📅 Monthly Consolidated Summary per Investor Id (Monthly MM Summary)",
+    thMonth: "Month",
+    thMMStatus: "MM Status",
+    thActiveDays: "Active Days",
+    thMonthlyTier: "Monthly Tier Recommendation",
+    cardStoredDays: "🗄️ Stored Daily Datasets Management on PC",
+    thTradeFile: "Trade File Name",
+    thTradeRows: "Trade Rows",
+    thOrderFile: "Order File Name",
+    thOrderRows: "Order Rows",
+    thImportTime: "Imported At",
+    modalImportTitle: "📥 Import XACM Trade & Order Data (Excel .xls/.xlsx or .csv)",
+    lblTradeDrop: "1. TRADE FILE (Required / Primary)",
+    lblOrderDrop: "2. ORDER / LIMIT FILE (Optional / Quoting Supplement)",
+    dropTitle: "Click or Drag & Drop File Here",
+    dropTradeSub: "Format: .xls, .xlsx, .csv (Cols: Investor Id, Instrument Id, B/S, Price, Volume, Trade Time, Trading Day)",
+    dropOrderSub: "Format: .xls, .xlsx, .csv (Cols: Investor Id, Instrument Id, Limit Price, Order Status, Insert Time, Update Time)",
+    lblOverrideDay: "Manual Trading Day Override (Leave blank to auto-detect from Trading Day column)",
+    importNote: "💡 <b>Note:</b> If the Order file is empty (0 data rows) or unavailable, the system still processes the Trade file in full and marks Order metrics for that day as <i>Trade-Based Estimation</i>.",
+    btnCancel: "Cancel",
+    btnProcessSave: "⚡ Process & Save to PC Database",
+    modalMMTitle: "⚙️ Market Maker Account Configuration (Investor Id)",
+    modalMMDesc: "Check the <b>Investor Ids</b> officially designated as <b>Market Makers (MM)</b>. You can also assign an alias/label to easily identify each MM in monthly reports.",
+    phManualId: "Add Investor Id manually (e.g. 10015550003)",
+    phManualAlias: "MM Alias / Name (e.g. MM-Alpha)",
+    btnAdd: "+ Add",
+    thMMCheck: "MM Status",
+    thBrokerDet: "Detected Broker / Firm",
+    thAlias: "MM Alias / Label",
+    thTotalLotRec: "Recorded Total Lots",
+    btnSaveMM: "💾 Save MM List & Apply Filter",
+    modalOvTitle: "➕ Log SLA Exception / Override",
+    lblOvProd: "Product / Contract",
+    lblOvReason: "Exception Reason Code",
+    lblOvCredit: "SLA Score Credit Adjustment (%)",
+    lblOvEvidence: "Evidence Reference / FIX Log / Audit Notes",
+    btnSaveAudit: "Save Audit Log",
+    allDaysOpt: (n) => `All Saved Days (${n} Days)`,
+    allMonthsOpt: (n) => `All Months (${n})`,
+    allMMOpt: (n) => `All Designated MMs (${n} Accounts)`,
+    allInvOpt: (n) => `All Investor Ids (${n} Accounts)`,
+    allProdOpt: (n) => `All Products (${n})`,
+    allInstrLadderOpt: "All Active Instruments",
+    allInvLadderOpt: "All Active Investors (Current Filter)",
+    daysBadge: (n) => `${n} Days`,
+    modeFull: "Mode: Full Order Book + Trade Evaluation",
+    modeProxy: "Mode: Trade-Based Proxy Evaluation (Import Order File for Limit Spread & OTR)",
+    noMatchData: "No records match the current filter selection.",
+    noContractData: "No contract records available.",
+    noOrderData: "No Limit Order rows recorded for this period (Order file had 0 rows or is not imported yet).",
+    noAlertData: "No surveillance alerts triggered under current filters.",
+    noOverrideData: "No SLA override / exception entries recorded.",
+    noMonthlyData: "No monthly consolidated data available yet.",
+    emptyDbText: "Local database is currently empty.",
+    deleteDayBtn: "Delete Day",
+    deleteBtn: "Delete",
+    chartBuyLabel: "Buy Volume (Lots)",
+    chartSellLabel: "Sell Volume (Lots)",
+    chartHourlyLabel: "Hourly MM Execution Volume (Lots)",
+    chartBidPxLabel: "Best/Avg Bid Price",
+    chartAskPxLabel: "Best/Avg Ask Price",
+    bothSidesBadge: "2-WAY ACTIVE",
+    oneSideBadge: "1-SIDE ONLY",
+    idleBadge: "NO QUOTE"
+  }
+};
+
+let currentLang = localStorage.getItem('xacm_mm_lang') || 'id';
+let currentTheme = localStorage.getItem('xacm_mm_theme') || 'dark';
+
+function t(key, ...args) {
+  const dict = I18N[currentLang] || I18N.id;
+  const val = dict[key];
+  if (typeof val === 'function') return val(...args);
+  return val !== undefined ? val : key;
+}
+
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('xacm_mm_lang', lang);
+  document.documentElement.lang = lang;
+  document.getElementById('btnLangID').classList.toggle('active', lang === 'id');
+  document.getElementById('btnLangEN').classList.toggle('active', lang === 'en');
+  applyStaticTranslations();
+  refreshAllUI();
+}
+
+function setTheme(theme) {
+  currentTheme = theme;
+  localStorage.setItem('xacm_mm_theme', theme);
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('btnThemeDark').classList.toggle('active', theme === 'dark');
+  document.getElementById('btnThemeLight').classList.toggle('active', theme === 'light');
+  renderCharts();
+  renderLadderAndTimeline();
+}
+
+function applyStaticTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const txt = t(key);
+    if (txt.includes('<')) el.innerHTML = txt;
+    else el.textContent = txt;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    el.setAttribute('placeholder', t(key));
+  });
+}
+
+// ============================================================================
+// 1. STATE & DEFAULT SCHEME CONFIGURATION
+// ============================================================================
+const DEFAULT_SCHEME_RULES = {
+  NSI: { product: 'NSI', tickSize: 0.005, maxSpreadTicks: 8,  minSize: 5, targetUptime: 85, minDailyVol: 100, maxOtr: 25 },
+  NPT: { product: 'NPT', tickSize: 0.1,   maxSpreadTicks: 15, minSize: 2, targetUptime: 85, minDailyVol: 50,  maxOtr: 25 },
+  NCP: { product: 'NCP', tickSize: 0.0005,maxSpreadTicks: 10, minSize: 5, targetUptime: 85, minDailyVol: 50,  maxOtr: 25 },
+  '2SO': { product: '2SO', tickSize: 0.01, maxSpreadTicks: 10, minSize: 5, targetUptime: 80, minDailyVol: 50, maxOtr: 25 },
+  DEFAULT: { product: 'OTHER', tickSize: 0.01, maxSpreadTicks: 10, minSize: 2, targetUptime: 80, minDailyVol: 30, maxOtr: 30 }
+};
+
+let appState = {
+  datasets: {},
+  mmRegistry: {},
+  schemeRules: JSON.parse(JSON.stringify(DEFAULT_SCHEME_RULES)),
+  weights: { uptime: 40, spread: 35, size: 25 },
+  tiers: { tier1: 90, tier2: 80, tier3: 65 },
+  overrides: []
+};
+
+let pendingTradeFile = null;
+let pendingOrderFile = null;
+let charts = { mmVolume: null, hourly: null, bidAskTime: null };
+let latestComputed = {
+  mmSummary: [],
+  contractSummary: [],
+  orderSummary: [],
+  filteredOrders: [],
+  alerts: [],
+  monthlySummary: [],
+  totalMarketVolAll: 0
+};
+
+// ============================================================================
+// 2. INDEXEDDB LOCAL STORAGE ENGINE
+// ============================================================================
+const DB_NAME = 'XACM_MM_Surveillance_DB';
+const DB_VERSION = 1;
+const STORE_NAME = 'app_storage';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveStateToDB() {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(appState, 'main_state');
+    return new Promise((res) => { tx.oncomplete = () => res(true); });
+  } catch (err) {
+    showToast('IndexedDB Error: ' + err.message, 'red');
+  }
+}
+
+async function loadStateFromDB() {
+  try {
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readonly');
+    const req = tx.objectStore(STORE_NAME).get('main_state');
+    return new Promise((res) => {
+      req.onsuccess = () => {
+        if (req.result) {
+          appState = Object.assign(appState, req.result);
+          if (!appState.schemeRules) appState.schemeRules = JSON.parse(JSON.stringify(DEFAULT_SCHEME_RULES));
+        }
+        res(true);
+      };
+      req.onerror = () => res(false);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// ============================================================================
+// 3. FILE PARSING & NORMALIZATION
+// ============================================================================
+function handleFileSelect(event, type) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (type === 'trade') {
+    pendingTradeFile = file;
+    document.getElementById('tradeFileSelected').textContent = `✓ ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  } else {
+    pendingOrderFile = file;
+    document.getElementById('orderFileSelected').textContent = `✓ ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+  }
+}
+
+function readSpreadsheetFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.SheetNames[0];
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
+        resolve(rows);
+      } catch (err) { reject(err); }
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function cleanKey(obj, candidates) {
+  const keys = Object.keys(obj);
+  for (const cand of candidates) {
+    const found = keys.find(k => k.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === cand.replace(/[^a-zA-Z0-9]/g, '').toLowerCase());
+    if (found !== undefined) return obj[found];
+  }
+  return '';
+}
+
+function extractProductCode(instrumentId) {
+  if (!instrumentId) return 'OTHER';
+  const parts = String(instrumentId).trim().split('-');
+  if (parts.length >= 3) return parts[2].toUpperCase();
+  return String(instrumentId).toUpperCase();
+}
+
+function normalizeTradeRows(rawRows, overrideDay) {
+  return rawRows.map(r => {
+    const investorId = String(cleanKey(r, ['Investor Id', 'InvestorId'])).trim();
+    const instrumentId = String(cleanKey(r, ['Instrument Id', 'InstrumentId'])).trim();
+    const tradingDay = overrideDay || String(cleanKey(r, ['Trading Day', 'TradingDay', 'Trade Date', 'TradeDate'])).trim();
+    return {
+      brokerId: String(cleanKey(r, ['Broker Id', 'BrokerId'])).trim(),
+      investorId,
+      instrumentId,
+      product: extractProductCode(instrumentId),
+      userId: String(cleanKey(r, ['User Id', 'UserId'])).trim(),
+      tradeId: String(cleanKey(r, ['Trade Id', 'TradeId'])).trim(),
+      bs: String(cleanKey(r, ['B/S', 'BS', 'Side'])).trim().toUpperCase(),
+      orderSysId: String(cleanKey(r, ['Order Sysid', 'OrderSysid', 'Order Sys Id'])).trim(),
+      offsetFlag: String(cleanKey(r, ['Offset Flag', 'OffsetFlag'])).trim(),
+      price: parseFloat(cleanKey(r, ['Price'])) || 0,
+      volume: parseFloat(cleanKey(r, ['Volume', 'Qty'])) || 0,
+      tradeDate: String(cleanKey(r, ['Trade Date', 'TradeDate'])).trim(),
+      tradeTime: String(cleanKey(r, ['Trade Time', 'TradeTime'])).trim(),
+      tradingDay,
+      tradingFirmId: String(cleanKey(r, ['Trading Firm Id', 'TradingFirmId'])).trim()
+    };
+  }).filter(r => r.investorId && r.instrumentId && r.volume > 0);
+}
+
+function normalizeOrderRows(rawRows, overrideDay) {
+  return rawRows.map(r => {
+    const investorId = String(cleanKey(r, ['Investor Id', 'InvestorId'])).trim();
+    const instrumentId = String(cleanKey(r, ['Instrument Id', 'InstrumentId'])).trim();
+    const tradingDay = overrideDay || String(cleanKey(r, ['Trading Day', 'TradingDay', 'Insert Date'])).trim();
+    return {
+      brokerId: String(cleanKey(r, ['Broker Id', 'BrokerId', 'Broker Id）'])).trim(),
+      investorId,
+      instrumentId,
+      product: extractProductCode(instrumentId),
+      userId: String(cleanKey(r, ['User Id', 'UserId'])).trim(),
+      orderPriceType: String(cleanKey(r, ['Order Price Type', 'OrderPriceType'])).trim(),
+      bs: String(cleanKey(r, ['B/S', 'BS', 'Side'])).trim().toUpperCase(),
+      limitPrice: parseFloat(cleanKey(r, ['Limit Price', 'LimitPrice'])) || 0,
+      offsetFlag: String(cleanKey(r, ['Offset Flag', 'OffsetFlag'])).trim(),
+      volOriginal: parseFloat(cleanKey(r, ['Volume Total Original', 'VolumeTotalOriginal', 'Volume'])) || 0,
+      volRemaining: parseFloat(cleanKey(r, ['Volume Total', 'VolumeTotal'])) || 0,
+      timeCondition: String(cleanKey(r, ['Time Condition', 'TimeCondition'])).trim(),
+      tradingDay,
+      orderSysId: String(cleanKey(r, ['Order Sys Id', 'OrderSysId', 'Order Sysid'])).trim(),
+      orderStatus: String(cleanKey(r, ['Order Status', 'OrderStatus'])).trim(),
+      insertDate: String(cleanKey(r, ['Insert Date', 'InsertDate'])).trim(),
+      insertTime: String(cleanKey(r, ['Insert Time', 'InsertTime'])).trim(),
+      updateTime: String(cleanKey(r, ['Update Time', 'UpdateTime'])).trim()
+    };
+  }).filter(r => r.investorId && r.instrumentId);
+}
+
+async function processImportedFiles() {
+  if (!pendingTradeFile && !pendingOrderFile) {
+    showToast(currentLang === 'id' ? 'Pilih minimal satu file Trade atau Order.' : 'Select at least one Trade or Order file.', 'red');
+    return;
+  }
+
+  const overrideDay = document.getElementById('importOverrideDay').value.trim();
+  let trades = [];
+  let orders = [];
+  let tradeFileName = '-';
+  let orderFileName = '-';
+
+  try {
+    if (pendingTradeFile) {
+      const rawTrades = await readSpreadsheetFile(pendingTradeFile);
+      trades = normalizeTradeRows(rawTrades, overrideDay);
+      tradeFileName = pendingTradeFile.name;
+    }
+    if (pendingOrderFile) {
+      const rawOrders = await readSpreadsheetFile(pendingOrderFile);
+      orders = normalizeOrderRows(rawOrders, overrideDay);
+      orderFileName = pendingOrderFile.name;
+    }
+
+    const detectedDay = overrideDay
+      || (trades[0] && trades[0].tradingDay)
+      || (orders[0] && orders[0].tradingDay)
+      || new Date().toISOString().slice(0,10).replace(/-/g,'');
+
+    const monthKey = detectedDay.length >= 6 ? `${detectedDay.slice(0,4)}-${detectedDay.slice(4,6)}` : 'UNKNOWN';
+
+    const existing = appState.datasets[detectedDay] || {
+      tradingDay: detectedDay,
+      month: monthKey,
+      tradeFileName: '-',
+      orderFileName: '-',
+      trades: [],
+      orders: []
+    };
+
+    if (trades.length > 0) {
+      existing.trades = trades;
+      existing.tradeFileName = tradeFileName;
+    }
+    if (pendingOrderFile) {
+      existing.orders = orders;
+      existing.orderFileName = orders.length > 0 ? orderFileName : `${orderFileName} (0 rows)`;
+    }
+    existing.importedAt = new Date().toLocaleString(currentLang === 'id' ? 'id-ID' : 'en-US');
+    appState.datasets[detectedDay] = existing;
+
+    const allRecords = [...existing.trades, ...existing.orders];
+    const volByInv = {};
+    existing.trades.forEach(t => { volByInv[t.investorId] = (volByInv[t.investorId] || 0) + t.volume; });
+
+    allRecords.forEach(row => {
+      if (!appState.mmRegistry[row.investorId]) {
+        const isCandidate = (volByInv[row.investorId] || 0) >= 50;
+        appState.mmRegistry[row.investorId] = {
+          investorId: row.investorId,
+          isMM: isCandidate,
+          alias: isCandidate ? `MM-${row.investorId.slice(-4)}` : 'Non-MM / Client',
+          brokerId: row.brokerId || '-'
+        };
+      }
+      if (row.product && !appState.schemeRules[row.product]) {
+        appState.schemeRules[row.product] = { ...DEFAULT_SCHEME_RULES.DEFAULT, product: row.product };
+      }
+    });
+
+    await saveStateToDB();
+    pendingTradeFile = null;
+    pendingOrderFile = null;
+    document.getElementById('tradeFileSelected').textContent = '';
+    document.getElementById('orderFileSelected').textContent = '';
+    document.getElementById('inputTradeFile').value = '';
+    document.getElementById('inputOrderFile').value = '';
+
+    closeModal('modalImport');
+    refreshAllUI();
+    showToast(currentLang === 'id'
+      ? `Berhasil memproses Trading Day ${detectedDay}: ${trades.length} baris Trade, ${orders.length} baris Order.`
+      : `Processed Trading Day ${detectedDay}: ${trades.length} Trade rows, ${orders.length} Order rows.`);
+  } catch (err) {
+    showToast('Error: ' + err.message, 'red');
+  }
+}
+
+// ============================================================================
+// 4. ANALYTICS ENGINE
+// ============================================================================
+function getFilteredDatasets() {
+  const periodVal = document.getElementById('filterPeriod').value;
+  const monthVal = document.getElementById('filterMonth').value;
+  return Object.values(appState.datasets).filter(ds => {
+    if (periodVal !== 'ALL' && ds.tradingDay !== periodVal) return false;
+    if (monthVal !== 'ALL' && ds.month !== monthVal) return false;
+    return true;
+  });
+}
+
+function isInvestorIncluded(investorId) {
+  const mmFilter = document.getElementById('filterMM').value;
+  const reg = appState.mmRegistry[investorId];
+  if (mmFilter === 'ALL_INVESTORS') return true;
+  if (mmFilter === 'ALL_MM') return reg ? reg.isMM : false;
+  return investorId === mmFilter;
+}
+
+function runAnalyticsEngine() {
+  const datasets = getFilteredDatasets();
+  const productFilter = document.getElementById('filterProduct').value;
+  const hasAnyData = Object.keys(appState.datasets).length > 0;
+
+  document.getElementById('emptyStateBanner').style.display = hasAnyData ? 'none' : 'flex';
+
+  let totalMarketVolAll = 0;
+  datasets.forEach(ds => {
+    ds.trades.forEach(t => {
+      if (productFilter !== 'ALL' && t.product !== productFilter) return;
+      totalMarketVolAll += t.volume;
+    });
+  });
+
+  const contractMap = {};
+  const orderSummaryList = [];
+  const filteredOrders = [];
+  const alertsList = [];
+  let hasOrderData = false;
+
+  datasets.forEach(ds => {
+    if (ds.orders && ds.orders.length > 0) hasOrderData = true;
+
+    ds.trades.forEach(t => {
+      if (productFilter !== 'ALL' && t.product !== productFilter) return;
+      const key = `${ds.tradingDay}|${t.investorId}|${t.instrumentId}`;
+      if (!contractMap[key]) {
+        contractMap[key] = {
+          tradingDay: ds.tradingDay, month: ds.month, investorId: t.investorId, brokerId: t.brokerId,
+          instrumentId: t.instrumentId, product: t.product, buyVol: 0, sellVol: 0, buyNotional: 0, sellNotional: 0,
+          tradeCount: 0, activeHoursSet: new Set(), orders: []
+        };
+      }
+      const c = contractMap[key];
+      c.tradeCount += 1;
+      if (t.bs === 'B' || t.bs === 'BUY') { c.buyVol += t.volume; c.buyNotional += t.price * t.volume; }
+      else { c.sellVol += t.volume; c.sellNotional += t.price * t.volume; }
+      if (t.tradeTime) c.activeHoursSet.add(t.tradeTime.slice(0, 2));
+    });
+
+    (ds.orders || []).forEach(o => {
+      if (productFilter !== 'ALL' && o.product !== productFilter) return;
+      if (isInvestorIncluded(o.investorId)) {
+        filteredOrders.push({ ...o, tradingDay: ds.tradingDay });
+      }
+      const key = `${ds.tradingDay}|${o.investorId}|${o.instrumentId}`;
+      if (!contractMap[key]) {
+        contractMap[key] = {
+          tradingDay: ds.tradingDay, month: ds.month, investorId: o.investorId, brokerId: o.brokerId,
+          instrumentId: o.instrumentId, product: o.product, buyVol: 0, sellVol: 0, buyNotional: 0, sellNotional: 0,
+          tradeCount: 0, activeHoursSet: new Set(), orders: []
+        };
+      }
+      contractMap[key].orders.push(o);
+    });
+
+    const tradesById = {};
+    ds.trades.forEach(t => {
+      if (productFilter !== 'ALL' && t.product !== productFilter) return;
+      if (!tradesById[t.tradeId]) tradesById[t.tradeId] = [];
+      tradesById[t.tradeId].push(t);
+    });
+    Object.values(tradesById).forEach(pair => {
+      if (pair.length >= 2 && pair[0].investorId === pair[1].investorId && isInvestorIncluded(pair[0].investorId)) {
+        alertsList.push({
+          code: 'ALT-07', tradingDay: ds.tradingDay, severity: 'WARNING',
+          investorId: pair[0].investorId, instrumentId: pair[0].instrumentId,
+          category: 'Self-Match / Cross Trade',
+          detail: currentLang === 'id'
+            ? `Trade Id ${pair[0].tradeId} (${pair[0].volume} lot @ ${pair[0].price}) terjadi pada Investor Id yang sama (${pair[0].investorId}). Periksa SMPID.`
+            : `Trade Id ${pair[0].tradeId} (${pair[0].volume} lots @ ${pair[0].price}) matched under the same Investor Id (${pair[0].investorId}). Check SMPID.`,
+          status: 'OPEN'
+        });
+      }
+    });
+  });
+
+  document.getElementById('activeModeLabel').textContent = hasOrderData ? t('modeFull') : t('modeProxy');
+
+  const contractRows = [];
+  Object.values(contractMap).forEach(c => {
+    const rule = appState.schemeRules[c.product] || DEFAULT_SCHEME_RULES.DEFAULT;
+    const totalVol = c.buyVol + c.sellVol;
+    const avgBuyPx = c.buyVol > 0 ? c.buyNotional / c.buyVol : 0;
+    const avgSellPx = c.sellVol > 0 ? c.sellNotional / c.sellVol : 0;
+    const twoWayPct = totalVol > 0 ? (2 * Math.min(c.buyVol, c.sellVol) / totalVol) * 100 : 0;
+
+    let bidOrders = 0, askOrders = 0, totalOrderQtyBid = 0, totalOrderQtyAsk = 0, canceledOrders = 0, rejectedOrders = 0;
+    let avgSpreadTicks = 0, timeInSpreadPct = 0, uptimePct = 0, otr = 0;
+
+    if (c.orders.length > 0) {
+      const minuteBuckets = {};
+      c.orders.forEach(o => {
+        const isBuy = o.bs === 'B' || o.bs === 'BUY';
+        if (isBuy) { bidOrders++; totalOrderQtyBid += o.volOriginal; }
+        else { askOrders++; totalOrderQtyAsk += o.volOriginal; }
+        const st = o.orderStatus.toLowerCase();
+        if (st.includes('cancel')) canceledOrders++;
+        if (st.includes('reject')) rejectedOrders++;
+
+        const minKey = (o.insertTime || '00:00').slice(0, 5);
+        if (!minuteBuckets[minKey]) minuteBuckets[minKey] = { bids: [], asks: [] };
+        if (o.limitPrice > 0) {
+          if (isBuy) minuteBuckets[minKey].bids.push(o.limitPrice);
+          else minuteBuckets[minKey].asks.push(o.limitPrice);
+        }
+      });
+
+      const buckets = Object.values(minuteBuckets);
+      let twoWayMins = 0, inSpreadMins = 0, spreadSumTicks = 0, spreadSamples = 0;
+      buckets.forEach(b => {
+        if (b.bids.length > 0 && b.asks.length > 0) {
+          twoWayMins++;
+          const spTicks = Math.max(0, (Math.min(...b.asks) - Math.max(...b.bids)) / rule.tickSize);
+          spreadSumTicks += spTicks;
+          spreadSamples++;
+          if (spTicks <= rule.maxSpreadTicks) inSpreadMins++;
+        }
+      });
+
+      const totalSessionMins = Math.max(buckets.length, 60);
+      uptimePct = Math.min(100, (twoWayMins / totalSessionMins) * 100);
+      avgSpreadTicks = spreadSamples > 0 ? spreadSumTicks / spreadSamples : 0;
+      timeInSpreadPct = twoWayMins > 0 ? (inSpreadMins / twoWayMins) * 100 : 0;
+      otr = c.tradeCount > 0 ? c.orders.length / c.tradeCount : c.orders.length;
+
+      orderSummaryList.push({
+        tradingDay: c.tradingDay, investorId: c.investorId, instrumentId: c.instrumentId, product: c.product,
+        totalOrders: c.orders.length, bidOrders, askOrders,
+        avgBidSize: bidOrders > 0 ? totalOrderQtyBid / bidOrders : 0,
+        avgAskSize: askOrders > 0 ? totalOrderQtyAsk / askOrders : 0,
+        avgSpreadTicks, maxSpreadLimit: rule.maxSpreadTicks, timeInSpreadPct, otr, canceledOrders, rejectedOrders
+      });
+    } else {
+      const activeHours = c.activeHoursSet.size;
+      uptimePct = Math.min(100, (activeHours / 14) * 100);
+      avgSpreadTicks = (avgBuyPx > 0 && avgSellPx > 0) ? Math.abs(avgSellPx - avgBuyPx) / rule.tickSize : rule.maxSpreadTicks * 0.8;
+      timeInSpreadPct = avgSpreadTicks <= rule.maxSpreadTicks ? 95 : Math.max(40, 100 - (avgSpreadTicks - rule.maxSpreadTicks) * 5);
+      otr = 0;
+    }
+
+    const volRatioPct = Math.min(100, (totalVol / Math.max(1, rule.minDailyVol)) * 100);
+    const sizeScore = c.orders.length > 0
+      ? Math.min(100, (((bidOrders > 0 ? totalOrderQtyBid/bidOrders : 0) + (askOrders > 0 ? totalOrderQtyAsk/askOrders : 0)) / 2 / Math.max(1, rule.minSize)) * 100)
+      : (twoWayPct * 0.5 + volRatioPct * 0.5);
+
+    let slaScore = (uptimePct * (appState.weights.uptime / 100)) + (timeInSpreadPct * (appState.weights.spread / 100)) + (sizeScore * (appState.weights.size / 100));
+    appState.overrides.filter(ov => ov.tradingDay === c.tradingDay && ov.investorId === c.investorId && (ov.product === 'ALL' || ov.product === c.product))
+      .forEach(ov => { slaScore = Math.min(100, slaScore + (parseFloat(ov.credit) || 0)); });
+
+    const isMM = appState.mmRegistry[c.investorId]?.isMM || false;
+    contractRows.push({
+      ...c, isMM, totalVol, avgBuyPx, avgSellPx, twoWayPct, activeHours: c.activeHoursSet.size,
+      uptimePct, avgSpreadTicks, timeInSpreadPct, otr, slaScore, rule
+    });
+
+    if (isMM && isInvestorIncluded(c.investorId)) {
+      if (twoWayPct < 50 && totalVol >= 5) {
+        alertsList.push({
+          code: 'ALT-01', tradingDay: c.tradingDay, severity: 'CRITICAL', investorId: c.investorId, instrumentId: c.instrumentId,
+          category: currentLang === 'id' ? 'Kuotasi Satu Arah (One-Sided Skew)' : 'One-Sided Quoting / Execution Skew',
+          detail: currentLang === 'id'
+            ? `Two-Way Balance hanya ${twoWayPct.toFixed(1)}% (Buy: ${c.buyVol} lot, Sell: ${c.sellVol} lot).`
+            : `Two-Way Balance is only ${twoWayPct.toFixed(1)}% (Buy: ${c.buyVol} lots, Sell: ${c.sellVol} lots).`,
+          status: 'OPEN'
+        });
+      }
+      if (uptimePct < rule.targetUptime) {
+        alertsList.push({
+          code: 'ALT-04', tradingDay: c.tradingDay, severity: uptimePct < rule.targetUptime - 15 ? 'CRITICAL' : 'WARNING',
+          investorId: c.investorId, instrumentId: c.instrumentId,
+          category: currentLang === 'id' ? 'Uptime Kuotasi di Bawah Target SLA' : 'Quoting Uptime Below SLA Target',
+          detail: currentLang === 'id'
+            ? `Uptime tercatat ${uptimePct.toFixed(1)}% vs Target Skema ${rule.targetUptime}% (${c.activeHoursSet.size} jam aktif).`
+            : `Recorded uptime ${uptimePct.toFixed(1)}% vs Scheme Target ${rule.targetUptime}% (${c.activeHoursSet.size} active hrs).`,
+          status: 'OPEN'
+        });
+      }
+      if (c.orders.length > 0 && avgSpreadTicks > rule.maxSpreadTicks) {
+        alertsList.push({
+          code: 'ALT-02', tradingDay: c.tradingDay, severity: 'WARNING', investorId: c.investorId, instrumentId: c.instrumentId,
+          category: currentLang === 'id' ? 'Pelanggaran Batas Max Spread' : 'Max Spread Breach',
+          detail: currentLang === 'id'
+            ? `Rata-rata spread ${avgSpreadTicks.toFixed(2)} ticks melewati batas skema ${rule.maxSpreadTicks} ticks.`
+            : `Average spread ${avgSpreadTicks.toFixed(2)} ticks exceeds scheme limit of ${rule.maxSpreadTicks} ticks.`,
+          status: 'OPEN'
+        });
+      }
+      if (otr > rule.maxOtr) {
+        alertsList.push({
+          code: 'ALT-06', tradingDay: c.tradingDay, severity: 'WARNING', investorId: c.investorId, instrumentId: c.instrumentId,
+          category: currentLang === 'id' ? 'Rasio Order-to-Trade (OTR) Tinggi' : 'High Order-to-Trade Ratio (OTR)',
+          detail: currentLang === 'id'
+            ? `OTR ${otr.toFixed(1)}x melampaui ambang batas ${rule.maxOtr}x.`
+            : `OTR ${otr.toFixed(1)}x exceeds threshold of ${rule.maxOtr}x.`,
+          status: 'OPEN'
+        });
+      }
+    }
+  });
+
+  const visibleContracts = contractRows.filter(r => isInvestorIncluded(r.investorId));
+  const mmAgg = {};
+  visibleContracts.forEach(r => {
+    if (!mmAgg[r.investorId]) {
+      const reg = appState.mmRegistry[r.investorId] || { isMM: false, alias: 'Non-MM', brokerId: r.brokerId };
+      mmAgg[r.investorId] = {
+        investorId: r.investorId, isMM: reg.isMM, alias: reg.alias, brokerId: reg.brokerId || r.brokerId,
+        products: new Set(), buyVol: 0, sellVol: 0, totalVol: 0, uptimeSum: 0, spreadSum: 0, otrSum: 0, slaSum: 0, count: 0
+      };
+    }
+    const m = mmAgg[r.investorId];
+    m.products.add(r.product);
+    m.buyVol += r.buyVol; m.sellVol += r.sellVol; m.totalVol += r.totalVol;
+    m.uptimeSum += r.uptimePct; m.spreadSum += r.avgSpreadTicks; m.otrSum += r.otr; m.slaSum += r.slaScore; m.count += 1;
+  });
+
+  const mmSummaryList = Object.values(mmAgg).map(m => ({
+    ...m,
+    productsStr: Array.from(m.products).join(', '),
+    twoWayPct: m.totalVol > 0 ? (2 * Math.min(m.buyVol, m.sellVol) / m.totalVol) * 100 : 0,
+    marketShare: totalMarketVolAll > 0 ? (m.totalVol / totalMarketVolAll) * 100 : 0,
+    avgUptime: m.count > 0 ? m.uptimeSum / m.count : 0,
+    avgSpread: m.count > 0 ? m.spreadSum / m.count : 0,
+    avgOtr: m.count > 0 ? m.otrSum / m.count : 0,
+    avgSla: m.count > 0 ? m.slaSum / m.count : 0
+  })).sort((a, b) => b.totalVol - a.totalVol);
+
+  const monthlyAgg = {};
+  Object.values(appState.datasets).forEach(ds => {
+    contractRows.filter(c => c.tradingDay === ds.tradingDay && isInvestorIncluded(c.investorId)).forEach(c => {
+      const mKey = `${ds.month}|${c.investorId}`;
+      if (!monthlyAgg[mKey]) {
+        const reg = appState.mmRegistry[c.investorId] || { isMM: false, alias: 'Non-MM' };
+        monthlyAgg[mKey] = {
+          month: ds.month, investorId: c.investorId, isMM: reg.isMM, alias: reg.alias,
+          daysSet: new Set(), buyVol: 0, sellVol: 0, totalVol: 0, uptimeSum: 0, spreadSum: 0, slaSum: 0, count: 0
+        };
+      }
+      const ma = monthlyAgg[mKey];
+      ma.daysSet.add(ds.tradingDay);
+      ma.buyVol += c.buyVol; ma.sellVol += c.sellVol; ma.totalVol += c.totalVol;
+      ma.uptimeSum += c.uptimePct; ma.spreadSum += c.avgSpreadTicks; ma.slaSum += c.slaScore; ma.count += 1;
+    });
+  });
+
+  const monthlySummaryList = Object.values(monthlyAgg).map(ma => ({
+    ...ma,
+    activeDays: ma.daysSet.size,
+    twoWayPct: ma.totalVol > 0 ? (2 * Math.min(ma.buyVol, ma.sellVol) / ma.totalVol) * 100 : 0,
+    avgUptime: ma.count > 0 ? ma.uptimeSum / ma.count : 0,
+    avgSpread: ma.count > 0 ? ma.spreadSum / ma.count : 0,
+    avgSla: ma.count > 0 ? ma.slaSum / ma.count : 0
+  })).sort((a, b) => b.month.localeCompare(a.month) || b.totalVol - a.totalVol);
+
+  latestComputed = {
+    mmSummary: mmSummaryList,
+    contractSummary: visibleContracts,
+    orderSummary: orderSummaryList.filter(o => isInvestorIncluded(o.investorId)),
+    filteredOrders,
+    alerts: alertsList,
+    monthlySummary: monthlySummaryList,
+    totalMarketVolAll
+  };
+}
+
+// ============================================================================
+// 5. TICK LADDER, TIME VISUAL & PER-TICK DETAIL ENGINE (NEW)
+// ============================================================================
+function syncLadderSelectors() {
+  const instrSet = new Set(latestComputed.filteredOrders.map(o => o.instrumentId));
+  const invSet = new Set(latestComputed.filteredOrders.map(o => o.investorId));
+
+  const selInstr = document.getElementById('ladderInstrumentSelect');
+  const prevInstr = selInstr.value;
+  selInstr.innerHTML = `<option value="ALL">${t('allInstrLadderOpt')}</option>` +
+    [...instrSet].sort().map(id => `<option value="${id}">${id}</option>`).join('');
+  if ([...selInstr.options].some(o => o.value === prevInstr)) selInstr.value = prevInstr;
+  else if (instrSet.size > 0) selInstr.value = [...instrSet].sort()[0];
+
+  const selInv = document.getElementById('ladderInvestorSelect');
+  const prevInv = selInv.value;
+  selInv.innerHTML = `<option value="ALL">${t('allInvLadderOpt')}</option>` +
+    [...invSet].sort().map(id => {
+      const alias = appState.mmRegistry[id]?.alias || '';
+      return `<option value="${id}">${id}${alias ? ' ('+alias+')' : ''}</option>`;
+    }).join('');
+  if ([...selInv.options].some(o => o.value === prevInv)) selInv.value = prevInv;
+}
+
+function getLadderScopedOrders() {
+  const instrSel = document.getElementById('ladderInstrumentSelect').value;
+  const invSel = document.getElementById('ladderInvestorSelect').value;
+  return latestComputed.filteredOrders.filter(o => {
+    if (instrSel !== 'ALL' && o.instrumentId !== instrSel) return false;
+    if (invSel !== 'ALL' && o.investorId !== invSel) return false;
+    return o.limitPrice > 0;
+  });
+}
+
+function renderLadderAndTimeline() {
+  syncLadderSelectors();
+  const orders = getLadderScopedOrders();
+  const instrSel = document.getElementById('ladderInstrumentSelect').value;
+  const prod = instrSel !== 'ALL' ? extractProductCode(instrSel) : (orders[0]?.product || 'DEFAULT');
+  const rule = appState.schemeRules[prod] || DEFAULT_SCHEME_RULES.DEFAULT;
+  const tickSize = rule.tickSize || 0.01;
+  const gran = document.getElementById('ladderGranularity').value;
+
+  const tbodyLadder = document.getElementById('tbodyTickLadder');
+  const timelineContainer = document.getElementById('timelineStripContainer');
+
+  if (orders.length === 0) {
+    tbodyLadder.innerHTML = `<tr><td colspan="5" class="center" style="padding:20px; color:var(--text-muted);">${t('noOrderData')}</td></tr>`;
+    timelineContainer.innerHTML = `<div style="padding:16px; text-align:center; color:var(--text-muted);">${t('noOrderData')}</div>`;
+    document.getElementById('ladderMetaBadge').textContent = '-';
+    document.getElementById('ladderSpreadBadge').textContent = '-';
+    if (charts.bidAskTime) { charts.bidAskTime.destroy(); charts.bidAskTime = null; }
+    renderPerTickDetailTable();
+    return;
+  }
+
+  // Build Price / Tick Ladder Levels
+  const levelsMap = {};
+  let maxBidPx = -Infinity;
+  let minAskPx = Infinity;
+  let maxQty = 1;
+
+  orders.forEach(o => {
+    const pxKey = o.limitPrice.toFixed(4);
+    if (!levelsMap[pxKey]) {
+      levelsMap[pxKey] = { price: o.limitPrice, bidLot: 0, bidCount: 0, askLot: 0, askCount: 0 };
+    }
+    const isBuy = o.bs === 'B' || o.bs === 'BUY';
+    const qty = o.volOriginal || o.volRemaining || 1;
+    if (isBuy) {
+      levelsMap[pxKey].bidLot += qty;
+      levelsMap[pxKey].bidCount += 1;
+      if (o.limitPrice > maxBidPx) maxBidPx = o.limitPrice;
+      if (levelsMap[pxKey].bidLot > maxQty) maxQty = levelsMap[pxKey].bidLot;
+    } else {
+      levelsMap[pxKey].askLot += qty;
+      levelsMap[pxKey].askCount += 1;
+      if (o.limitPrice < minAskPx) minAskPx = o.limitPrice;
+      if (levelsMap[pxKey].askLot > maxQty) maxQty = levelsMap[pxKey].askLot;
+    }
+  });
+
+  const sortedLevels = Object.values(levelsMap).sort((a, b) => b.price - a.price);
+  const bboSpreadTicks = (maxBidPx > -Infinity && minAskPx < Infinity)
+    ? ((minAskPx - maxBidPx) / tickSize)
+    : null;
+
+  document.getElementById('ladderMetaBadge').textContent = `Tick: ${tickSize} | Levels: ${sortedLevels.length}`;
+  document.getElementById('ladderSpreadBadge').textContent = bboSpreadTicks !== null
+    ? `Spread: ${bboSpreadTicks.toFixed(1)} Ticks (Max: ${rule.maxSpreadTicks})`
+    : 'Spread: N/A';
+
+  tbodyLadder.innerHTML = sortedLevels.map(lv => {
+    const isBestBid = lv.price === maxBidPx && lv.bidLot > 0;
+    const isBestAsk = lv.price === minAskPx && lv.askLot > 0;
+    const rowCls = (isBestBid || isBestAsk) ? 'ladder-row-bbo' : (lv.bidLot > 0 ? 'ladder-row-bid' : (lv.askLot > 0 ? 'ladder-row-ask' : ''));
+    const bidW = lv.bidLot > 0 ? Math.min(100, (lv.bidLot / maxQty) * 100) : 0;
+    const askW = lv.askLot > 0 ? Math.min(100, (lv.askLot / maxQty) * 100) : 0;
+    const pxTag = isBestBid ? ' <span class="pill pill-pass" style="font-size:9px; padding:1px 4px;">BID</span>'
+                : (isBestAsk ? ' <span class="pill pill-breach" style="font-size:9px; padding:1px 4px;">ASK</span>' : '');
+
+    return `
+      <tr class="${rowCls}">
+        <td class="ladder-bid-col">
+          <div class="depth-bar-wrap">
+            ${lv.bidLot > 0 ? `<div class="depth-bar bid" style="width:${bidW}%;"></div><span class="depth-val">${lv.bidLot}</span>` : '<span style="color:var(--text-muted);">-</span>'}
+          </div>
+        </td>
+        <td class="center ladder-bid-col mono">${lv.bidCount || '-'}</td>
+        <td class="center ladder-price-col mono" style="font-weight:700; color:var(--text-heading);">${lv.price.toFixed(4)}${pxTag}</td>
+        <td class="center ladder-ask-col mono">${lv.askCount || '-'}</td>
+        <td class="ladder-ask-col">
+          <div class="depth-bar-wrap ask-wrap">
+            ${lv.askLot > 0 ? `<div class="depth-bar ask" style="width:${askW}%;"></div><span class="depth-val">${lv.askLot}</span>` : '<span style="color:var(--text-muted);">-</span>'}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Time Bucket Aggregation (Minute or Hour)
+  const sliceLen = gran === 'hour' ? 2 : 5;
+  const suffix = gran === 'hour' ? ':00' : '';
+  const timeBuckets = {};
+
+  orders.forEach(o => {
+    const rawT = (o.insertTime || o.updateTime || '00:00:00').trim();
+    const bucketKey = rawT.slice(0, sliceLen) + suffix;
+    if (!timeBuckets[bucketKey]) {
+      timeBuckets[bucketKey] = { time: bucketKey, bids: [], asks: [], bidLot: 0, askLot: 0 };
+    }
+    const tb = timeBuckets[bucketKey];
+    const isBuy = o.bs === 'B' || o.bs === 'BUY';
+    const qty = o.volOriginal || o.volRemaining || 1;
+    if (isBuy) {
+      tb.bids.push(o.limitPrice);
+      tb.bidLot += qty;
+    } else {
+      tb.asks.push(o.limitPrice);
+      tb.askLot += qty;
+    }
+  });
+
+  const sortedTimes = Object.values(timeBuckets).sort((a, b) => a.time.localeCompare(b.time));
+  const maxBucketLot = Math.max(1, ...sortedTimes.map(tb => Math.max(tb.bidLot, tb.askLot)));
+
+  // Render Bid/Ask Price Line Chart over Time
+  const styles = getComputedStyle(document.documentElement);
+  const gridColor = styles.getPropertyValue('--chart-grid').trim() || '#1e2738';
+  const tickColor = styles.getPropertyValue('--chart-tick').trim() || '#9aa7b8';
+
+  const ctxTime = document.getElementById('chartBidAskTime').getContext('2d');
+  if (charts.bidAskTime) charts.bidAskTime.destroy();
+
+  charts.bidAskTime = new Chart(ctxTime, {
+    type: 'line',
+    data: {
+      labels: sortedTimes.map(tb => tb.time),
+      datasets: [
+        {
+          label: t('chartBidPxLabel'),
+          data: sortedTimes.map(tb => tb.bids.length > 0 ? Math.max(...tb.bids) : null),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.15)',
+          spanGaps: true,
+          tension: 0.2,
+          pointRadius: 3
+        },
+        {
+          label: t('chartAskPxLabel'),
+          data: sortedTimes.map(tb => tb.asks.length > 0 ? Math.min(...tb.asks) : null),
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+          spanGaps: true,
+          tension: 0.2,
+          pointRadius: 3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: tickColor, font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } },
+        y: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } }
+      }
+    }
+  });
+
+  // Render Two-Way Quoting Timeline Strip per Time Bucket
+  timelineContainer.innerHTML = sortedTimes.map(tb => {
+    const hasBid = tb.bidLot > 0;
+    const hasAsk = tb.askLot > 0;
+    const bPct = Math.min(100, (tb.bidLot / maxBucketLot) * 100);
+    const aPct = Math.min(100, (tb.askLot / maxBucketLot) * 100);
+    const statusPill = (hasBid && hasAsk)
+      ? `<span class="pill pill-pass">${t('bothSidesBadge')}</span>`
+      : ((hasBid || hasAsk)
+        ? `<span class="pill pill-warn">${t('oneSideBadge')}</span>`
+        : `<span class="pill pill-neutral">${t('idleBadge')}</span>`);
+
+    return `
+      <div class="time-slot-row">
+        <div class="time-slot-label">${tb.time}</div>
+        <div class="time-slot-bars">
+          <div class="bar-lane">
+            <span class="bar-tag b">BID</span>
+            <div class="bar-track"><div class="bar-fill-b" style="width:${bPct}%;"></div></div>
+            <span class="mono" style="width:42px; text-align:right; color:var(--accent-green);">${tb.bidLot}</span>
+          </div>
+          <div class="bar-lane">
+            <span class="bar-tag a">ASK</span>
+            <div class="bar-track"><div class="bar-fill-a" style="width:${aPct}%;"></div></div>
+            <span class="mono" style="width:42px; text-align:right; color:var(--accent-red);">${tb.askLot}</span>
+          </div>
+        </div>
+        <div style="text-align:right;">${statusPill}</div>
+      </div>
+    `;
+  }).join('');
+
+  renderPerTickDetailTable();
+}
+
+function renderPerTickDetailTable() {
+  const tbody = document.getElementById('tbodyPerTickDetail');
+  const sideFilter = document.getElementById('tickSideFilter').value;
+  const searchQ = document.getElementById('tickSearchInput').value.toLowerCase().trim();
+  const orders = getLadderScopedOrders()
+    .filter(o => {
+      if (sideFilter !== 'ALL' && o.bs !== sideFilter) return false;
+      if (searchQ) {
+        const hay = `${o.insertTime} ${o.updateTime} ${o.limitPrice} ${o.orderStatus} ${o.investorId} ${o.instrumentId}`.toLowerCase();
+        if (!hay.includes(searchQ)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => (a.insertTime || '').localeCompare(b.insertTime || ''));
+
+  if (orders.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12" class="center" style="padding:18px; color:var(--text-muted);">${t('noOrderData')}</td></tr>`;
+    return;
+  }
+
+  let prevPxBySide = {};
+  tbody.innerHTML = orders.slice(0, 300).map(o => {
+    const prod = o.product || extractProductCode(o.instrumentId);
+    const rule = appState.schemeRules[prod] || DEFAULT_SCHEME_RULES.DEFAULT;
+    const tickSize = rule.tickSize || 0.01;
+    const sideKey = `${o.investorId}|${o.instrumentId}|${o.bs}`;
+    let deltaTicksStr = '-';
+    if (prevPxBySide[sideKey] !== undefined && o.limitPrice > 0) {
+      const diffTicks = (o.limitPrice - prevPxBySide[sideKey]) / tickSize;
+      const sign = diffTicks > 0 ? '+' : '';
+      const clr = diffTicks > 0 ? 'var(--accent-green)' : (diffTicks < 0 ? 'var(--accent-red)' : 'var(--text-muted)');
+      deltaTicksStr = `<span style="color:${clr}; font-weight:600;">${sign}${diffTicks.toFixed(1)}t</span>`;
+    }
+    if (o.limitPrice > 0) prevPxBySide[sideKey] = o.limitPrice;
+
+    const isBuy = o.bs === 'B' || o.bs === 'BUY';
+    return `
+      <tr>
+        <td class="mono">${o.insertTime || '-'}</td>
+        <td class="mono">${o.updateTime || '-'}</td>
+        <td class="mono">${o.investorId}</td>
+        <td class="mono" style="font-weight:600;">${o.instrumentId}</td>
+        <td class="center"><span class="pill ${isBuy ? 'pill-pass' : 'pill-breach'}">${o.bs}</span></td>
+        <td class="num" style="font-weight:700;">${o.limitPrice.toFixed(4)}</td>
+        <td class="num">${deltaTicksStr}</td>
+        <td class="num">${o.volOriginal}</td>
+        <td class="num">${o.volRemaining}</td>
+        <td class="mono">${o.orderPriceType || '-'}</td>
+        <td>${o.orderStatus || '-'}</td>
+        <td class="mono" style="color:var(--text-muted);">${o.orderSysId || '-'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ============================================================================
+// 6. EXISTING TAB RENDERERS (OVERVIEW, ORDER SUMMARY, SCHEME, ALERTS, MONTHLY)
+// ============================================================================
+function getTierBadge(slaScore, isMM) {
+  if (!isMM) return `<span class="pill pill-neutral">NON-MM</span>`;
+  if (slaScore >= appState.tiers.tier1) return `<span class="pill pill-pass">TIER 1 (PLATINUM)</span>`;
+  if (slaScore >= appState.tiers.tier2) return `<span class="pill pill-info">TIER 2 (STANDARD)</span>`;
+  if (slaScore >= appState.tiers.tier3) return `<span class="pill pill-warn">TIER 3 (PROBATION)</span>`;
+  return `<span class="pill pill-breach">NON-COMPLIANT</span>`;
+}
+
+function populateFilterDropdowns() {
+  const days = Object.keys(appState.datasets).sort().reverse();
+  const months = [...new Set(Object.values(appState.datasets).map(d => d.month))].sort().reverse();
+
+  const selPeriod = document.getElementById('filterPeriod');
+  const curPeriod = selPeriod.value || 'ALL';
+  selPeriod.innerHTML = `<option value="ALL">${t('allDaysOpt', days.length)}</option>` +
+    days.map(d => `<option value="${d}">${d} (${appState.datasets[d].trades.length} Trades)</option>`).join('');
+  if ([...selPeriod.options].some(o => o.value === curPeriod)) selPeriod.value = curPeriod;
+
+  const selMonth = document.getElementById('filterMonth');
+  const curMonth = selMonth.value || 'ALL';
+  selMonth.innerHTML = `<option value="ALL">${t('allMonthsOpt', months.length)}</option>` +
+    months.map(m => `<option value="${m}">${m}</option>`).join('');
+  if ([...selMonth.options].some(o => o.value === curMonth)) selMonth.value = curMonth;
+
+  const selMM = document.getElementById('filterMM');
+  const curMM = selMM.value || 'ALL_MM';
+  const allInvestors = Object.values(appState.mmRegistry).sort((a, b) => (b.isMM - a.isMM) || a.investorId.localeCompare(b.investorId));
+  const mmCount = allInvestors.filter(i => i.isMM).length;
+  document.getElementById('mmCountBadge').textContent = mmCount;
+
+  let mmOpts = `<option value="ALL_MM">${t('allMMOpt', mmCount)}</option>
+                <option value="ALL_INVESTORS">${t('allInvOpt', allInvestors.length)}</option>`;
+  allInvestors.forEach(inv => {
+    const tag = inv.isMM ? '[MM]' : '[Non-MM]';
+    mmOpts += `<option value="${inv.investorId}">${tag} ${inv.investorId} — ${inv.alias}</option>`;
+  });
+  selMM.innerHTML = mmOpts;
+  if ([...selMM.options].some(o => o.value === curMM)) selMM.value = curMM;
+
+  const selProd = document.getElementById('filterProduct');
+  const curProd = selProd.value || 'ALL';
+  const prods = new Set();
+  Object.values(appState.datasets).forEach(ds => ds.trades.forEach(t => prods.add(t.product)));
+  selProd.innerHTML = `<option value="ALL">${t('allProdOpt', prods.size)}</option>` +
+    [...prods].sort().map(p => `<option value="${p}">${p}</option>`).join('');
+  if ([...selProd.options].some(o => o.value === curProd)) selProd.value = curProd;
+
+  document.getElementById('storageDaysBadge').textContent = t('daysBadge', days.length);
+}
+
+function renderKPIs() {
+  const { mmSummary, contractSummary, orderSummary, alerts, totalMarketVolAll } = latestComputed;
+  const loc = currentLang === 'id' ? 'id-ID' : 'en-US';
+
+  const totalBuy = mmSummary.reduce((s, m) => s + m.buyVol, 0);
+  const totalSell = mmSummary.reduce((s, m) => s + m.sellVol, 0);
+  const totalVol = totalBuy + totalSell;
+  const sharePct = totalMarketVolAll > 0 ? (totalVol / totalMarketVolAll) * 100 : 0;
+
+  document.getElementById('kpiTotalVol').textContent = totalVol.toLocaleString(loc);
+  document.getElementById('kpiTotalTrades').textContent = currentLang === 'id'
+    ? `Market Share: ${sharePct.toFixed(1)}% dari ${totalMarketVolAll.toLocaleString(loc)} lot`
+    : `Market Share: ${sharePct.toFixed(1)}% of ${totalMarketVolAll.toLocaleString(loc)} lots`;
+
+  const avgSla = mmSummary.length > 0 ? mmSummary.reduce((s, m) => s + m.avgSla, 0) / mmSummary.length : 0;
+  const passContracts = contractSummary.filter(c => c.slaScore >= appState.tiers.tier2).length;
+  document.getElementById('kpiAvgSla').textContent = `${avgSla.toFixed(1)}%`;
+  document.getElementById('kpiSlaPassCount').textContent = currentLang === 'id'
+    ? `${passContracts} / ${contractSummary.length} Kontrak-Hari Lulus SLA`
+    : `${passContracts} / ${contractSummary.length} Contract-Days Passed SLA`;
+
+  const twoWay = totalVol > 0 ? (2 * Math.min(totalBuy, totalSell) / totalVol) * 100 : 0;
+  document.getElementById('kpiTwoWay').textContent = `${twoWay.toFixed(1)}%`;
+  document.getElementById('kpiBuySellSplit').textContent = `Buy: ${totalBuy.toLocaleString(loc)} Lot | Sell: ${totalSell.toLocaleString(loc)} Lot`;
+
+  const avgSpread = mmSummary.length > 0 ? mmSummary.reduce((s, m) => s + m.avgSpread, 0) / mmSummary.length : 0;
+  const avgOtr = orderSummary.length > 0 ? orderSummary.reduce((s, o) => s + o.otr, 0) / orderSummary.length : 0;
+  document.getElementById('kpiSpreadOtr').textContent = orderSummary.length > 0
+    ? `${avgSpread.toFixed(1)} Ticks / ${avgOtr.toFixed(1)}x`
+    : `${avgSpread.toFixed(1)} Ticks (Est.)`;
+  document.getElementById('kpiOrderStatusSub').textContent = orderSummary.length > 0
+    ? (currentLang === 'id' ? `${orderSummary.reduce((s, o) => s + o.totalOrders, 0)} Limit Orders dianalisis` : `${orderSummary.reduce((s, o) => s + o.totalOrders, 0)} Limit Orders analyzed`)
+    : (currentLang === 'id' ? 'File Order kosong/belum diunggah (mode estimasi)' : 'Order file empty/not uploaded (proxy mode)');
+
+  document.getElementById('kpiAlertsTotal').textContent = alerts.length;
+  document.getElementById('alertCountBadge').textContent = alerts.length;
+  const selfCross = alerts.filter(a => a.code === 'ALT-07').length;
+  document.getElementById('kpiSelfMatchSub').textContent = `Self-Cross / SMPID Alerts: ${selfCross}`;
+}
+
+function renderMMLeaderboard() {
+  const tbody = document.getElementById('tbodyMMPerformance');
+  const rows = latestComputed.mmSummary;
+  const loc = currentLang === 'id' ? 'id-ID' : 'en-US';
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="14" class="center" style="padding:20px; color:var(--text-muted);">${t('noMatchData')}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(m => `
+    <tr>
+      <td class="mono" style="font-weight:700; color:var(--text-heading);">${m.investorId}</td>
+      <td>${m.isMM ? `<span class="pill pill-pass">MM</span> <span style="font-size:11px; color:var(--text-secondary);">${m.alias}</span>` : `<span class="pill pill-neutral">Non-MM</span>`}</td>
+      <td class="mono">${m.brokerId}</td>
+      <td class="mono">${m.productsStr}</td>
+      <td class="num">${m.buyVol.toLocaleString(loc)}</td>
+      <td class="num">${m.sellVol.toLocaleString(loc)}</td>
+      <td class="num" style="font-weight:700;">${m.totalVol.toLocaleString(loc)}</td>
+      <td class="num">${m.marketShare.toFixed(1)}%</td>
+      <td class="num" style="color:${m.twoWayPct >= 75 ? 'var(--accent-green)' : 'var(--accent-amber)'};">${m.twoWayPct.toFixed(1)}%</td>
+      <td class="num">${m.avgUptime.toFixed(1)}%</td>
+      <td class="num">${m.avgSpread.toFixed(2)}</td>
+      <td class="num">${m.avgOtr > 0 ? m.avgOtr.toFixed(1) + 'x' : '-'}</td>
+      <td class="num" style="font-weight:700; color:${m.avgSla >= appState.tiers.tier2 ? 'var(--accent-green)' : 'var(--accent-red)'};">${m.avgSla.toFixed(1)}%</td>
+      <td class="center">${getTierBadge(m.avgSla, m.isMM)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderContractBreakdown() {
+  const tbody = document.getElementById('tbodyContractBreakdown');
+  const q = document.getElementById('searchContractInput').value.toLowerCase().trim();
+  const loc = currentLang === 'id' ? 'id-ID' : 'en-US';
+  const rows = latestComputed.contractSummary.filter(r =>
+    !q || r.instrumentId.toLowerCase().includes(q) || r.investorId.toLowerCase().includes(q)
+  );
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="14" class="center" style="padding:18px; color:var(--text-muted);">${t('noContractData')}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const netPos = r.buyVol - r.sellVol;
+    const pass = r.slaScore >= appState.tiers.tier2;
+    return `
+      <tr>
+        <td class="mono">${r.tradingDay}</td>
+        <td class="mono">${r.investorId}</td>
+        <td>${r.isMM ? '<span class="pill pill-pass">MM</span>' : '<span class="pill pill-neutral">Non-MM</span>'}</td>
+        <td class="mono" style="font-weight:600;">${r.instrumentId}</td>
+        <td class="num">${r.buyVol.toLocaleString(loc)}</td>
+        <td class="num">${r.sellVol.toLocaleString(loc)}</td>
+        <td class="num" style="color:${netPos === 0 ? 'var(--accent-green)' : 'var(--accent-amber)'};">${netPos > 0 ? '+'+netPos : netPos}</td>
+        <td class="num">${r.avgBuyPx > 0 ? r.avgBuyPx.toFixed(4) : '-'}</td>
+        <td class="num">${r.avgSellPx > 0 ? r.avgSellPx.toFixed(4) : '-'}</td>
+        <td class="num">${r.activeHours} ${currentLang === 'id' ? 'jam' : 'hrs'}</td>
+        <td class="num">${r.uptimePct.toFixed(1)}%</td>
+        <td class="num">${r.avgSpreadTicks.toFixed(2)} / ${r.rule.maxSpreadTicks}</td>
+        <td class="num" style="font-weight:700;">${r.slaScore.toFixed(1)}%</td>
+        <td class="center">${pass ? '<span class="pill pill-pass">COMPLIANT</span>' : '<span class="pill pill-breach">BELOW SLA</span>'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderOrderTab() {
+  const rows = latestComputed.orderSummary;
+  const loc = currentLang === 'id' ? 'id-ID' : 'en-US';
+  const totalOrders = rows.reduce((s, r) => s + r.totalOrders, 0);
+  const bidOrders = rows.reduce((s, r) => s + r.bidOrders, 0);
+  const askOrders = rows.reduce((s, r) => s + r.askOrders, 0);
+  const canceled = rows.reduce((s, r) => s + r.canceledOrders, 0);
+  const rejected = rows.reduce((s, r) => s + r.rejectedOrders, 0);
+  const avgSpreadComp = rows.length > 0 ? rows.reduce((s, r) => s + r.timeInSpreadPct, 0) / rows.length : 0;
+
+  document.getElementById('kpiOrderTotal').textContent = totalOrders.toLocaleString(loc);
+  document.getElementById('kpiOrderBreakdown').textContent = `Bid: ${bidOrders} | Ask: ${askOrders}`;
+  document.getElementById('kpiOrderTwoWayWin').textContent = rows.length > 0 ? `${avgSpreadComp.toFixed(1)}%` : '0%';
+  document.getElementById('kpiOrderSpreadComp').textContent = rows.length > 0 ? `${avgSpreadComp.toFixed(1)}%` : '0%';
+  const cancelPct = totalOrders > 0 ? ((canceled + rejected) / totalOrders) * 100 : 0;
+  document.getElementById('kpiOrderCancelRate').textContent = `${cancelPct.toFixed(1)}%`;
+  document.getElementById('kpiOrderCancelDetail').textContent = `${canceled} Canceled | ${rejected} Rejected`;
+
+  const tbody = document.getElementById('tbodyOrderSummary');
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="13" class="center" style="padding:20px; color:var(--text-muted);">${t('noOrderData')}</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(o => `
+    <tr>
+      <td class="mono">${o.tradingDay}</td>
+      <td class="mono">${o.investorId}</td>
+      <td class="mono">${o.instrumentId}</td>
+      <td class="num">${o.totalOrders}</td>
+      <td class="num">${o.bidOrders}</td>
+      <td class="num">${o.askOrders}</td>
+      <td class="num">${o.avgBidSize.toFixed(1)}</td>
+      <td class="num">${o.avgAskSize.toFixed(1)}</td>
+      <td class="num">${o.avgSpreadTicks.toFixed(2)}</td>
+      <td class="num">${o.maxSpreadLimit}</td>
+      <td class="num">${o.timeInSpreadPct.toFixed(1)}%</td>
+      <td class="num">${o.otr.toFixed(1)}x</td>
+      <td class="center">${o.avgSpreadTicks <= o.maxSpreadLimit ? '<span class="pill pill-pass">IN SPREAD</span>' : '<span class="pill pill-breach">WIDE SPREAD</span>'}</td>
+    </tr>
+  `).join('');
+
+  renderLadderAndTimeline();
+}
+
+function renderSchemeTab() {
+  const tbody = document.getElementById('tbodySchemeRules');
+  const rules = Object.values(appState.schemeRules);
+  tbody.innerHTML = rules.map(r => `
+    <tr>
+      <td class="mono" style="font-weight:700; color:var(--accent-amber);">${r.product}</td>
+      <td class="num"><input type="number" step="0.0001" data-prod="${r.product}" data-field="tickSize" value="${r.tickSize}" style="width:80px; text-align:right;" /></td>
+      <td class="num"><input type="number" step="1" data-prod="${r.product}" data-field="maxSpreadTicks" value="${r.maxSpreadTicks}" style="width:75px; text-align:right;" /></td>
+      <td class="num"><input type="number" step="1" data-prod="${r.product}" data-field="minSize" value="${r.minSize}" style="width:75px; text-align:right;" /></td>
+      <td class="num"><input type="number" step="1" data-prod="${r.product}" data-field="targetUptime" value="${r.targetUptime}" style="width:75px; text-align:right;" /></td>
+      <td class="num"><input type="number" step="5" data-prod="${r.product}" data-field="minDailyVol" value="${r.minDailyVol}" style="width:80px; text-align:right;" /></td>
+      <td class="num"><input type="number" step="1" data-prod="${r.product}" data-field="maxOtr" value="${r.maxOtr}" style="width:70px; text-align:right;" /></td>
+    </tr>
+  `).join('');
+
+  document.getElementById('weightUptime').value = appState.weights.uptime;
+  document.getElementById('weightSpread').value = appState.weights.spread;
+  document.getElementById('weightSize').value = appState.weights.size;
+  document.getElementById('tier1Min').value = appState.tiers.tier1;
+  document.getElementById('tier2Min').value = appState.tiers.tier2;
+  document.getElementById('tier3Min').value = appState.tiers.tier3;
+  document.getElementById('tier3Label').textContent = appState.tiers.tier3;
+}
+
+function renderAlertsTable() {
+  const sevFilter = document.getElementById('filterAlertSeverity').value;
+  const rows = latestComputed.alerts.filter(a => sevFilter === 'ALL' || a.severity === sevFilter);
+  const tbody = document.getElementById('tbodyAlerts');
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" class="center" style="padding:18px; color:var(--text-muted);">${t('noAlertData')}</td></tr>`;
+  } else {
+    tbody.innerHTML = rows.map(a => {
+      const pillCls = a.severity === 'CRITICAL' ? 'pill-breach' : (a.severity === 'WARNING' ? 'pill-warn' : 'pill-info');
+      return `
+        <tr>
+          <td class="mono" style="font-weight:700;">${a.code}</td>
+          <td class="mono">${a.tradingDay}</td>
+          <td><span class="pill ${pillCls}">${a.severity}</span></td>
+          <td class="mono">${a.investorId}</td>
+          <td class="mono">${a.instrumentId}</td>
+          <td style="font-weight:600;">${a.category}</td>
+          <td style="white-space:normal; max-width:420px;">${a.detail}</td>
+          <td class="center"><span class="pill pill-warn">${a.status}</span></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  const ovBody = document.getElementById('tbodyOverrides');
+  if (appState.overrides.length === 0) {
+    ovBody.innerHTML = `<tr><td colspan="8" class="center" style="padding:16px; color:var(--text-muted);">${t('noOverrideData')}</td></tr>`;
+  } else {
+    ovBody.innerHTML = appState.overrides.map((ov, idx) => `
+      <tr>
+        <td class="mono">${ov.tradingDay}</td>
+        <td class="mono">${ov.investorId}</td>
+        <td class="mono">${ov.product}</td>
+        <td><span class="pill pill-info">${ov.reason}</span></td>
+        <td class="num" style="color:var(--accent-green);">+${ov.credit}%</td>
+        <td style="white-space:normal;">${ov.evidence}</td>
+        <td>${ov.createdAt}</td>
+        <td class="center"><button class="btn btn-red btn-sm" onclick="deleteOverride(${idx})">${t('deleteBtn')}</button></td>
+      </tr>
+    `).join('');
+  }
+}
+
+function renderMonthlyAndStorageTab() {
+  const mBody = document.getElementById('tbodyMonthlySummary');
+  const mRows = latestComputed.monthlySummary;
+  const loc = currentLang === 'id' ? 'id-ID' : 'en-US';
+  if (mRows.length === 0) {
+    mBody.innerHTML = `<tr><td colspan="12" class="center" style="padding:18px; color:var(--text-muted);">${t('noMonthlyData')}</td></tr>`;
+  } else {
+    mBody.innerHTML = mRows.map(m => `
+      <tr>
+        <td class="mono" style="font-weight:700;">${m.month}</td>
+        <td class="mono" style="font-weight:700; color:var(--text-heading);">${m.investorId}</td>
+        <td>${m.isMM ? `<span class="pill pill-pass">MM</span> ${m.alias}` : `<span class="pill pill-neutral">Non-MM</span>`}</td>
+        <td class="num">${m.activeDays} ${currentLang === 'id' ? 'hari' : 'days'}</td>
+        <td class="num">${m.buyVol.toLocaleString(loc)}</td>
+        <td class="num">${m.sellVol.toLocaleString(loc)}</td>
+        <td class="num" style="font-weight:700;">${m.totalVol.toLocaleString(loc)}</td>
+        <td class="num">${m.twoWayPct.toFixed(1)}%</td>
+        <td class="num">${m.avgUptime.toFixed(1)}%</td>
+        <td class="num">${m.avgSpread.toFixed(2)}</td>
+        <td class="num" style="font-weight:700; color:${m.avgSla >= appState.tiers.tier2 ? 'var(--accent-green)' : 'var(--accent-amber)'};">${m.avgSla.toFixed(1)}%</td>
+        <td class="center">${getTierBadge(m.avgSla, m.isMM)}</td>
+      </tr>
+    `).join('');
+  }
+
+  const sBody = document.getElementById('tbodyStoredDays');
+  const days = Object.values(appState.datasets).sort((a, b) => b.tradingDay.localeCompare(a.tradingDay));
+  if (days.length === 0) {
+    sBody.innerHTML = `<tr><td colspan="8" class="center" style="padding:18px; color:var(--text-muted);">${t('emptyDbText')}</td></tr>`;
+  } else {
+    sBody.innerHTML = days.map(d => `
+      <tr>
+        <td class="mono" style="font-weight:700; color:var(--accent-amber);">${d.tradingDay}</td>
+        <td class="mono">${d.month}</td>
+        <td>${d.tradeFileName}</td>
+        <td class="num">${d.trades.length.toLocaleString(loc)}</td>
+        <td>${d.orderFileName}</td>
+        <td class="num">${(d.orders || []).length.toLocaleString(loc)}</td>
+        <td>${d.importedAt || '-'}</td>
+        <td class="center">
+          <button class="btn btn-red btn-sm" onclick="deleteStoredDay('${d.tradingDay}')">${t('deleteDayBtn')}</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+}
+
+function renderCharts() {
+  const styles = getComputedStyle(document.documentElement);
+  const gridColor = styles.getPropertyValue('--chart-grid').trim() || '#1e2738';
+  const tickColor = styles.getPropertyValue('--chart-tick').trim() || '#9aa7b8';
+
+  const ctxVol = document.getElementById('chartMMVolume').getContext('2d');
+  if (charts.mmVolume) charts.mmVolume.destroy();
+
+  const topMMs = latestComputed.mmSummary.slice(0, 10);
+  charts.mmVolume = new Chart(ctxVol, {
+    type: 'bar',
+    data: {
+      labels: topMMs.map(m => m.investorId),
+      datasets: [
+        { label: t('chartBuyLabel'), data: topMMs.map(m => m.buyVol), backgroundColor: '#10b981' },
+        { label: t('chartSellLabel'), data: topMMs.map(m => m.sellVol), backgroundColor: '#ef4444' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: tickColor, font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } },
+        y: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } }
+      }
+    }
+  });
+
+  const ctxHr = document.getElementById('chartHourlyActivity').getContext('2d');
+  if (charts.hourly) charts.hourly.destroy();
+
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+  const hourlyVol = new Array(24).fill(0);
+  const datasets = getFilteredDatasets();
+  const prodFilter = document.getElementById('filterProduct').value;
+
+  datasets.forEach(ds => {
+    ds.trades.forEach(t => {
+      if (!isInvestorIncluded(t.investorId)) return;
+      if (prodFilter !== 'ALL' && t.product !== prodFilter) return;
+      const h = parseInt((t.tradeTime || '00').slice(0, 2), 10);
+      if (!isNaN(h) && h >= 0 && h < 24) hourlyVol[h] += t.volume;
+    });
+  });
+
+  charts.hourly = new Chart(ctxHr, {
+    type: 'line',
+    data: {
+      labels: hours.map(h => `${h}:00`),
+      datasets: [{
+        label: t('chartHourlyLabel'),
+        data: hourlyVol,
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.15)',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: tickColor, font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } },
+        y: { ticks: { color: tickColor, font: { size: 10 } }, grid: { color: gridColor } }
+      }
+    }
+  });
+}
+
+function refreshAllUI() {
+  populateFilterDropdowns();
+  runAnalyticsEngine();
+  renderKPIs();
+  renderMMLeaderboard();
+  renderContractBreakdown();
+  renderOrderTab();
+  renderSchemeTab();
+  renderAlertsTable();
+  renderMonthlyAndStorageTab();
+  renderCharts();
+}
+
+// ============================================================================
+// 7. INTERACTIVE CONTROLS & EXPORTS
+// ============================================================================
+function onFilterChange() {
+  runAnalyticsEngine();
+  renderKPIs();
+  renderMMLeaderboard();
+  renderContractBreakdown();
+  renderOrderTab();
+  renderAlertsTable();
+  renderMonthlyAndStorageTab();
+  renderCharts();
+}
+
+function onMonthFilterChange() {
+  document.getElementById('filterPeriod').value = 'ALL';
+  onFilterChange();
+}
+
+function switchTab(tabId, btnEl) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  btnEl.classList.add('active');
+  if (tabId === 'tab-order-limit') renderLadderAndTimeline();
+}
+
+function openImportModal() { document.getElementById('modalImport').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openMMRegistryModal() {
+  const volMap = {};
+  const loc = currentLang === 'id' ? 'id-ID' : 'en-US';
+  Object.values(appState.datasets).forEach(ds => {
+    ds.trades.forEach(t => { volMap[t.investorId] = (volMap[t.investorId] || 0) + t.volume; });
+  });
+
+  const tbody = document.getElementById('tbodyMMRegistry');
+  const entries = Object.values(appState.mmRegistry).sort((a, b) => (volMap[b.investorId] || 0) - (volMap[a.investorId] || 0));
+
+  if (entries.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="center" style="padding:16px; color:var(--text-muted);">${t('noMatchData')}</td></tr>`;
+  } else {
+    tbody.innerHTML = entries.map(inv => `
+      <tr>
+        <td class="center"><input type="checkbox" data-inv="${inv.investorId}" class="mm-check" ${inv.isMM ? 'checked' : ''} style="width:16px; height:16px; accent-color:var(--accent-amber);" /></td>
+        <td class="mono" style="font-weight:700;">${inv.investorId}</td>
+        <td class="mono">${inv.brokerId || '-'}</td>
+        <td><input type="text" data-inv-alias="${inv.investorId}" value="${inv.alias || ''}" style="width:180px;" /></td>
+        <td class="num">${(volMap[inv.investorId] || 0).toLocaleString(loc)}</td>
+      </tr>
+    `).join('');
+  }
+  document.getElementById('modalMMRegistry').classList.add('open');
+}
+
+function addManualMM() {
+  const id = document.getElementById('newManualMMId').value.trim();
+  const alias = document.getElementById('newManualMMName').value.trim() || `MM-${id.slice(-4)}`;
+  if (!id) return;
+  appState.mmRegistry[id] = { investorId: id, isMM: true, alias, brokerId: '-' };
+  document.getElementById('newManualMMId').value = '';
+  document.getElementById('newManualMMName').value = '';
+  openMMRegistryModal();
+}
+
+async function saveMMRegistry() {
+  document.querySelectorAll('.mm-check').forEach(chk => {
+    const id = chk.getAttribute('data-inv');
+    if (appState.mmRegistry[id]) appState.mmRegistry[id].isMM = chk.checked;
+  });
+  document.querySelectorAll('input[data-inv-alias]').forEach(inp => {
+    const id = inp.getAttribute('data-inv-alias');
+    if (appState.mmRegistry[id]) appState.mmRegistry[id].alias = inp.value.trim();
+  });
+  await saveStateToDB();
+  closeModal('modalMMRegistry');
+  refreshAllUI();
+  showToast(currentLang === 'id' ? 'Daftar akun Market Maker berhasil disimpan.' : 'Market Maker registry saved.');
+}
+
+async function saveSchemeRules() {
+  document.querySelectorAll('#tbodySchemeRules input').forEach(inp => {
+    const prod = inp.getAttribute('data-prod');
+    const field = inp.getAttribute('data-field');
+    if (appState.schemeRules[prod]) appState.schemeRules[prod][field] = parseFloat(inp.value) || 0;
+  });
+  await saveStateToDB();
+  refreshAllUI();
+  showToast(currentLang === 'id' ? 'Parameter Skema diperbarui & skor SLA dihitung ulang.' : 'Scheme rules updated & SLA recalculated.');
+}
+
+async function saveWeightsAndTiers() {
+  const wU = parseFloat(document.getElementById('weightUptime').value) || 0;
+  const wS = parseFloat(document.getElementById('weightSpread').value) || 0;
+  const wZ = parseFloat(document.getElementById('weightSize').value) || 0;
+  if (Math.round(wU + wS + wZ) !== 100) {
+    showToast(currentLang === 'id' ? `Total bobot harus 100% (saat ini: ${wU + wS + wZ}%).` : `Weights must sum to 100% (currently ${wU + wS + wZ}%).`, 'red');
+    return;
+  }
+  appState.weights = { uptime: wU, spread: wS, size: wZ };
+  appState.tiers = {
+    tier1: parseFloat(document.getElementById('tier1Min').value) || 90,
+    tier2: parseFloat(document.getElementById('tier2Min').value) || 80,
+    tier3: parseFloat(document.getElementById('tier3Min').value) || 65
+  };
+  await saveStateToDB();
+  refreshAllUI();
+  showToast(currentLang === 'id' ? 'Bobot SLA & tier insentif disimpan.' : 'SLA weights & incentive tiers saved.');
+}
+
+function openOverrideModal() {
+  const days = Object.keys(appState.datasets).sort().reverse();
+  document.getElementById('ovDay').value = days[0] || '';
+  document.getElementById('ovInvestorId').innerHTML = Object.values(appState.mmRegistry).map(i =>
+    `<option value="${i.investorId}">${i.investorId} (${i.alias})</option>`
+  ).join('');
+  document.getElementById('modalOverride').classList.add('open');
+}
+
+async function saveOverrideEntry() {
+  const tradingDay = document.getElementById('ovDay').value.trim();
+  const investorId = document.getElementById('ovInvestorId').value;
+  const product = document.getElementById('ovProduct').value.trim().toUpperCase() || 'ALL';
+  const reason = document.getElementById('ovReason').value;
+  const credit = parseFloat(document.getElementById('ovCredit').value) || 0;
+  const evidence = document.getElementById('ovEvidence').value.trim();
+
+  if (!tradingDay || !investorId) {
+    showToast(currentLang === 'id' ? 'Trading Day dan Investor Id wajib diisi.' : 'Trading Day and Investor Id are required.', 'red');
+    return;
+  }
+
+  appState.overrides.push({
+    tradingDay, investorId, product, reason, credit,
+    evidence: evidence || '-',
+    createdAt: new Date().toLocaleString(currentLang === 'id' ? 'id-ID' : 'en-US')
+  });
+  await saveStateToDB();
+  closeModal('modalOverride');
+  refreshAllUI();
+}
+
+async function deleteOverride(idx) {
+  appState.overrides.splice(idx, 1);
+  await saveStateToDB();
+  refreshAllUI();
+}
+
+async function deleteStoredDay(day) {
+  const msg = currentLang === 'id' ? `Hapus dataset Trading Day ${day} dari penyimpanan lokal PC?` : `Delete Trading Day ${day} dataset from PC local storage?`;
+  if (!confirm(msg)) return;
+  delete appState.datasets[day];
+  await saveStateToDB();
+  refreshAllUI();
+}
+
+async function clearAllStorage() {
+  const msg = currentLang === 'id' ? 'Hapus SELURUH data tersimpan dari PC ini?' : 'Delete ALL stored data from this PC?';
+  if (!confirm(msg)) return;
+  appState.datasets = {};
+  appState.mmRegistry = {};
+  appState.overrides = [];
+  await saveStateToDB();
+  refreshAllUI();
+}
+
+function exportToExcel() {
+  const wb = XLSX.utils.book_new();
+  const s1Data = latestComputed.mmSummary.map(m => ({
+    'Investor Id': m.investorId, 'Status': m.isMM ? 'Market Maker' : 'Non-MM', 'Alias': m.alias,
+    'Broker Id': m.brokerId, 'Active Products': m.productsStr, 'Buy Volume (Lot)': m.buyVol,
+    'Sell Volume (Lot)': m.sellVol, 'Total Volume (Lot)': m.totalVol, 'Market Share (%)': Number(m.marketShare.toFixed(2)),
+    'Two-Way Balance (%)': Number(m.twoWayPct.toFixed(2)), 'Avg Uptime (%)': Number(m.avgUptime.toFixed(2)),
+    'Avg Spread (Ticks)': Number(m.avgSpread.toFixed(2)), 'Avg OTR': Number(m.avgOtr.toFixed(2)),
+    'Composite SLA Score (%)': Number(m.avgSla.toFixed(2))
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(s1Data.length ? s1Data : [{ Info: 'No Data' }]), 'MM_Performance');
+
+  const s2Data = latestComputed.filteredOrders.slice(0, 5000).map(o => ({
+    'Trading Day': o.tradingDay, 'Investor Id': o.investorId, 'Instrument Id': o.instrumentId,
+    'B/S': o.bs, 'Limit Price': o.limitPrice, 'Orig Lot': o.volOriginal, 'Rem Lot': o.volRemaining,
+    'Insert Time': o.insertTime, 'Update Time': o.updateTime, 'Status': o.orderStatus, 'Order Sys Id': o.orderSysId
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(s2Data.length ? s2Data : [{ Info: 'No Order Data' }]), 'Order_Tick_Log');
+
+  const s3Data = latestComputed.monthlySummary.map(m => ({
+    'Month': m.month, 'Investor Id': m.investorId, 'Status': m.isMM ? 'MM' : 'Non-MM', 'Alias': m.alias,
+    'Active Days': m.activeDays, 'Total Buy Lot': m.buyVol, 'Total Sell Lot': m.sellVol, 'Total Volume Lot': m.totalVol,
+    'Two-Way (%)': Number(m.twoWayPct.toFixed(2)), 'Avg Uptime (%)': Number(m.avgUptime.toFixed(2)),
+    'Avg Spread (Ticks)': Number(m.avgSpread.toFixed(2)), 'Monthly SLA Score (%)': Number(m.avgSla.toFixed(2))
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(s3Data.length ? s3Data : [{ Info: 'No Data' }]), 'Monthly_Summary');
+
+  const s4Data = latestComputed.alerts.map(a => ({
+    'Code': a.code, 'Trading Day': a.tradingDay, 'Severity': a.severity,
+    'Investor Id': a.investorId, 'Instrument Id': a.instrumentId, 'Category': a.category, 'Detail': a.detail
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(s4Data.length ? s4Data : [{ Info: 'No Alerts' }]), 'Surveillance_Alerts');
+
+  XLSX.writeFile(wb, `XACM_MM_Surveillance_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast(currentLang === 'id' ? 'Laporan Excel (.xlsx) berhasil diunduh.' : 'Excel report (.xlsx) downloaded.');
+}
+
+function exportToPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const loc = currentLang === 'id' ? 'id-ID' : 'en-US';
+  const periodLabel = document.getElementById('filterPeriod').options[document.getElementById('filterPeriod').selectedIndex].text;
+  const mmLabel = document.getElementById('filterMM').options[document.getElementById('filterMM').selectedIndex].text;
+
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, 297, 24, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.text('XACM MARKET CONTROL CENTER — MARKET MAKER SURVEILLANCE REPORT', 14, 11);
+  doc.setFontSize(9);
+  doc.setTextColor(200, 210, 225);
+  doc.text(`Period: ${periodLabel}  |  Account Filter: ${mmLabel}  |  Generated: ${new Date().toLocaleString(loc)}`, 14, 18);
+
+  doc.setTextColor(20, 20, 20);
+  doc.setFontSize(11);
+  doc.text(currentLang === 'id' ? '1. Ringkasan Performa & SLA Market Maker (per Investor Id)' : '1. Market Maker Performance & SLA Summary (by Investor Id)', 14, 32);
+
+  doc.autoTable({
+    startY: 35,
+    head: [['Investor Id', 'Status', 'Products', 'Buy Lot', 'Sell Lot', 'Total Lot', 'Share %', 'Two-Way %', 'Uptime %', 'Spread', 'SLA %']],
+    body: latestComputed.mmSummary.map(m => [
+      m.investorId, m.isMM ? `MM (${m.alias})` : 'Non-MM', m.productsStr,
+      m.buyVol.toLocaleString(loc), m.sellVol.toLocaleString(loc), m.totalVol.toLocaleString(loc),
+      m.marketShare.toFixed(1) + '%', m.twoWayPct.toFixed(1) + '%', m.avgUptime.toFixed(1) + '%',
+      m.avgSpread.toFixed(2), m.avgSla.toFixed(1) + '%'
+    ]),
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [30, 41, 59], textColor: 255 }
+  });
+
+  const nextY = doc.lastAutoTable.finalY + 10;
+  doc.text(currentLang === 'id' ? '2. Rekap Konsolidasi Bulanan (Monthly MM Summary)' : '2. Monthly Consolidated Summary (Monthly MM Summary)', 14, nextY);
+  doc.autoTable({
+    startY: nextY + 3,
+    head: [['Month', 'Investor Id', 'Status', 'Active Days', 'Total Buy', 'Total Sell', 'Total Lot', 'Two-Way %', 'Avg Uptime %', 'Monthly SLA %']],
+    body: latestComputed.monthlySummary.map(m => [
+      m.month, m.investorId, m.isMM ? 'MM' : 'Non-MM', m.activeDays,
+      m.buyVol.toLocaleString(loc), m.sellVol.toLocaleString(loc), m.totalVol.toLocaleString(loc),
+      m.twoWayPct.toFixed(1) + '%', m.avgUptime.toFixed(1) + '%', m.avgSla.toFixed(1) + '%'
+    ]),
+    styles: { fontSize: 8, cellPadding: 2 },
+    headStyles: { fillColor: [30, 41, 59], textColor: 255 }
+  });
+
+  if (latestComputed.alerts.length > 0) {
+    doc.addPage();
+    doc.setFontSize(11);
+    doc.text(currentLang === 'id' ? '3. Log Peringatan Pengawasan & Pelanggaran Skema (Surveillance Alerts)' : '3. Surveillance & Scheme Breach Alerts Log', 14, 16);
+    doc.autoTable({
+      startY: 20,
+      head: [['Code', 'Day', 'Severity', 'Investor Id', 'Instrument Id', 'Category', 'Detail']],
+      body: latestComputed.alerts.map(a => [a.code, a.tradingDay, a.severity, a.investorId, a.instrumentId, a.category, a.detail]),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [153, 27, 27], textColor: 255 }
+    });
+  }
+
+  doc.save(`XACM_MM_Surveillance_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+  showToast(currentLang === 'id' ? 'Laporan PDF berhasil diunduh.' : 'PDF report downloaded.');
+}
+
+function backupDatabaseJSON() {
+  const blob = new Blob([JSON.stringify(appState)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `XACM_MM_DB_Backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function restoreDatabaseJSON() { document.getElementById('inputRestoreJSON').click(); }
+
+function handleRestoreJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (parsed && parsed.datasets) {
+        appState = Object.assign(appState, parsed);
+        await saveStateToDB();
+        refreshAllUI();
+        showToast(currentLang === 'id' ? 'Database berhasil dipulihkan.' : 'Database restored successfully.');
+      }
+    } catch (err) { showToast('JSON Error: ' + err.message, 'red'); }
+  };
+  reader.readAsText(file);
+}
+
+function setupDragAndDrop() {
+  ['dropTrade', 'dropOrder'].forEach(id => {
+    const el = document.getElementById(id);
+    const type = id === 'dropTrade' ? 'trade' : 'order';
+    el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('dragover'); });
+    el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+    el.addEventListener('drop', (e) => {
+      e.preventDefault();
+      el.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) handleFileSelect({ target: { files: e.dataTransfer.files } }, type);
+    });
+  });
+}
+
+function showToast(msg, type = 'amber') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  if (type === 'red') toast.style.borderLeftColor = 'var(--accent-red)';
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  setupDragAndDrop();
+  await loadStateFromDB();
+  setTheme(currentTheme);
+  setLanguage(currentLang);
+});
+</script>
+</body>
+</html>
