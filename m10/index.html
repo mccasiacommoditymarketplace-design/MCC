@@ -1,0 +1,2165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Control Center - Menu</title>
+
+    <!-- SCRIPT PROTEKSI LOGIN UNTUK menu.html -->
+    <script>
+        if (localStorage.getItem('mcc_session') !== 'aktif') {
+            window.location.replace('index.html');
+        }
+    </script>
+
+
+  <!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Transaction Volume Summary</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Data & Export Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .official-frame { border: 2px solid #0f172a; }
+    .dark .official-frame { border-color: #475569; }
+    .official-banner { background-color: #539e38; color: #ffffff; }
+    .official-thead { background-color: #165b26; color: #ffffff; }
+    .official-subtotal { background-color: #e2efda; }
+    .dark .official-subtotal { background-color: rgba(22, 101, 52, 0.35); }
+    .subtotal-line { border-top: 1.5px solid #0f172a; border-bottom: 1.5px solid #0f172a; }
+    .dark .subtotal-line { border-color: #64748b; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff !important; color: #000 !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-150">
+
+  <!-- Toast Container -->
+  <div id="toast-box" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none no-print"></div>
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-30 bg-[#144522] dark:bg-slate-900 text-white border-b border-emerald-900/60 dark:border-slate-800 shadow no-print">
+    <div class="max-w-[1560px] mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-[#539e38] flex items-center justify-center font-extrabold text-sm shadow-inner">TV</div>
+        <h1 class="text-base sm:text-lg font-extrabold tracking-tight" data-i18n="appTitle">TRANSACTION VOLUME SUMMARY</h1>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Backup/History Quick Button -->
+        <button id="btn-top-history" type="button" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-semibold text-emerald-200 border border-emerald-400/30 flex items-center gap-1.5 cursor-pointer">
+          <span id="pc-dot" class="w-2 h-2 rounded-full bg-sky-400"></span>
+          <span id="pc-status-pill" data-i18n="backupLocalLabel">Arsip Lokal</span>
+          <span id="history-count-pill" class="px-1.5 py-0.2 rounded-full bg-black/30 font-mono text-[10px]">0</span>
+        </button>
+
+        <!-- Bilingual ID / EN -->
+        <div class="inline-flex bg-black/25 dark:bg-slate-800 p-1 rounded-xl border border-white/15 dark:border-slate-700">
+          <button id="btn-lang-id" type="button" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-[#539e38] text-white cursor-pointer">ID</button>
+          <button id="btn-lang-en" type="button" class="px-2.5 py-1 rounded-lg text-xs font-bold text-white/75 hover:text-white cursor-pointer">EN</button>
+        </div>
+
+        <!-- Dark / Light Toggle -->
+        <button id="btn-theme" type="button" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 dark:bg-slate-800 dark:hover:bg-slate-700 border border-white/15 dark:border-slate-700 flex items-center justify-center text-sm cursor-pointer" title="Toggle Dark/Light Theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+
+        <!-- Import Modal Trigger -->
+        <button id="btn-open-import" type="button" class="px-3.5 py-2 rounded-xl bg-[#539e38] hover:bg-emerald-600 text-white text-xs sm:text-sm font-bold shadow-sm cursor-pointer" data-i18n="btnImport">
+          + Import F&amp;O Listing
+        </button>
+
+        <!-- Account Mapping & Fee Settings -->
+        <button id="btn-open-mapping" type="button" class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 dark:bg-slate-800 dark:hover:bg-slate-700 border border-white/15 dark:border-slate-700 text-xs sm:text-sm font-semibold cursor-pointer" data-i18n="btnMapping">
+          Mapping MM / LP &amp; Rate
+        </button>
+
+        <!-- Export Excel & PDF -->
+        <button id="btn-export-excel" type="button" class="px-3.5 py-2 rounded-xl bg-emerald-50 text-[#144522] hover:bg-white dark:bg-emerald-950 dark:text-emerald-200 dark:border dark:border-emerald-700 text-xs sm:text-sm font-bold cursor-pointer" data-i18n="btnExcel">
+          Export Excel
+        </button>
+        <button id="btn-export-pdf" type="button" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-bold cursor-pointer" data-i18n="btnPdf">
+          Export PDF
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="max-w-[1560px] mx-auto px-4 sm:px-6 py-5 flex flex-col lg:flex-row gap-5">
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="w-full lg:w-80 shrink-0 flex flex-col gap-4 no-print">
+
+      <!-- Active Dataset Status -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400" data-i18n="activeDataset">Dataset Aktif</span>
+          <span id="dataset-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">Sample</span>
+        </div>
+        <p id="dataset-name" class="text-sm font-bold truncate">F&amp;O Trade Listing (Sample)</p>
+        <p id="dataset-stats" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">0 baris • 0 hari</p>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+          <button id="btn-reset-sample" type="button" class="font-semibold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer" data-i18n="btnResetSample">Reset Sample</button>
+          <button id="btn-side-history" type="button" class="font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer" data-i18n="btnHistoryTab">History &amp; Backup</button>
+        </div>
+      </div>
+
+      <!-- History Date Quick Selector -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-amber-300/70 dark:border-amber-800/60 p-4 shadow-sm space-y-2">
+        <label class="block text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400" data-i18n="historyDateTitle">
+          History Date (Pilih Tanggal)
+        </label>
+        <select id="select-history-date" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <option value="ALL">-- Semua Tanggal (Mode Periodik) --</option>
+        </select>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400" data-i18n="historyDateDesc">
+          Pilih tanggal harian dari dataset aktif atau arsip backup untuk tampilan Daily instan.
+        </p>
+      </div>
+
+      <!-- Period, Crosstrade Rules & Sub-Account Filters -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+          <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300" data-i18n="sideFilterTitle">Periode &amp; Detail Akun</h2>
+          <button id="btn-reset-filters" type="button" class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer" data-i18n="btnResetAll">Reset</button>
+        </div>
+
+        <!-- 1. Period Mode -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold" data-i18n="periodModeLabel">1. Mode Periode Volume</label>
+          <div class="grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+            <button id="btn-mode-daily" type="button" class="py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer" data-i18n="modeDaily">Daily</button>
+            <button id="btn-mode-periodic" type="button" class="py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-[#144522] dark:text-white shadow-xs cursor-pointer" data-i18n="modePeriodic">Periodik</button>
+          </div>
+
+          <div id="wrap-daily" class="hidden">
+            <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1" data-i18n="selectDateLabel">Tanggal Trading</label>
+            <select id="input-daily-date" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold"></select>
+          </div>
+
+          <div id="wrap-periodic" class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1" data-i18n="fromDate">Dari</label>
+              <input id="input-start-date" type="date" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1" data-i18n="toDate">Sampai</label>
+              <input id="input-end-date" type="date" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-2.5 py-1.5 text-xs" />
+            </div>
+            <div class="col-span-2">
+              <label class="block text-[11px] text-slate-500 dark:text-slate-400 mb-1" data-i18n="periodLabelText">Label Period Laporan</label>
+              <input id="input-period-label" type="text" placeholder="November 2026" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Trading Account / CM & Crosstrade Rules -->
+        <div class="bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60 rounded-xl p-3 space-y-2">
+          <label class="block text-xs font-bold" data-i18n="taRuleTitle">2. CM / Trading Account &amp; Crosstrade</label>
+
+          <select id="select-trading-account" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-bold">
+            <option value="ALL">Semua Trading Account</option>
+          </select>
+
+          <select id="select-xt-mode" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold">
+            <option value="INCLUDE" data-i18n="xtInclude">Sertakan Semua (Normal + Crosstrade)</option>
+            <option value="EXCLUDE" data-i18n="xtExclude">Kecualikan Crosstrade</option>
+            <option value="ONLY" data-i18n="xtOnly">Hanya Crosstrade</option>
+            <option value="ACCOUNT_RULE" data-i18n="xtAccountRule">Ikuti Kondisi Per Trading Account</option>
+          </select>
+
+          <div class="pt-1 border-t border-amber-200/70 dark:border-amber-800/50">
+            <div class="flex justify-between text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+              <span data-i18n="perAccRuleLabel">Kondisi Per Trading Account:</span>
+              <span class="text-amber-700 dark:text-amber-400" data-i18n="flagXtLabel">Crosstrade</span>
+            </div>
+            <div id="ta-xt-list" class="space-y-1 max-h-28 overflow-y-auto"></div>
+          </div>
+        </div>
+
+        <!-- 3. Sub Account Filter -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold" data-i18n="subAccFilterTitle">3. Sub Account</label>
+            <div class="flex gap-2 text-[11px]">
+              <button id="btn-sub-all" type="button" class="font-semibold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer" data-i18n="selectAll">Semua</button>
+              <span class="text-slate-300 dark:text-slate-700">|</span>
+              <button id="btn-sub-none" type="button" class="text-slate-500 hover:underline cursor-pointer" data-i18n="clearAll">Hapus</button>
+            </div>
+          </div>
+          <input id="input-sub-search" type="text" placeholder="Cari Sub Account..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs" />
+          <div id="subaccount-list" class="max-h-44 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 p-2 space-y-1 bg-slate-50/60 dark:bg-slate-800/50"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT CONTENT -->
+    <section class="flex-1 min-w-0 flex flex-col gap-5">
+
+      <!-- TOP KPI CARDS & CASCADING MULTI-CRITERIA FILTER BAR -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-4 no-print">
+
+        <!-- KPI Row -->
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-3">
+          <!-- Hero Total Volume Card -->
+          <div class="xl:col-span-4 rounded-2xl bg-gradient-to-br from-[#144522] via-[#19612e] to-emerald-700 text-white p-4 flex flex-col justify-between shadow">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-200" data-i18n="kpiTotal">Total Keseluruhan Volume</span>
+              <span class="px-2 py-0.5 rounded-full bg-white/15 text-[10px] font-bold">LOTS</span>
+            </div>
+            <div class="mt-2">
+              <div id="kpi-total-lots" class="text-3xl font-extrabold font-mono">0</div>
+              <div class="mt-2 pt-2 border-t border-white/15 flex items-center justify-between text-xs text-emerald-100">
+                <span id="kpi-total-trades">0 transaksi</span>
+                <span id="kpi-total-usd" class="font-mono font-bold text-white">$0.00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5 Breakdown KPI Cards -->
+          <div class="xl:col-span-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+            <div class="rounded-xl p-3 bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60">
+              <div class="flex justify-between items-center">
+                <span class="text-[11px] font-bold text-emerald-800 dark:text-emerald-300">MM</span>
+                <span class="text-[9px] font-bold px-1.5 rounded bg-emerald-200/80 dark:bg-emerald-900 text-emerald-900 dark:text-emerald-200">Maker</span>
+              </div>
+              <p id="kpi-mm-lots" class="text-lg font-extrabold font-mono mt-2">0</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">Lots</p>
+            </div>
+
+            <div class="rounded-xl p-3 bg-teal-50/70 dark:bg-teal-950/30 border border-teal-200/80 dark:border-teal-800/60">
+              <div class="flex justify-between items-center">
+                <span class="text-[11px] font-bold text-teal-800 dark:text-teal-300">LP</span>
+                <span class="text-[9px] font-bold px-1.5 rounded bg-teal-200/80 dark:bg-teal-900 text-teal-900 dark:text-teal-200">Provider</span>
+              </div>
+              <p id="kpi-lp-lots" class="text-lg font-extrabold font-mono mt-2">0</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">Lots</p>
+            </div>
+
+            <div class="rounded-xl p-3 bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200/80 dark:border-sky-800/60">
+              <div class="flex justify-between items-center">
+                <span class="text-[11px] font-bold text-sky-800 dark:text-sky-300">Client</span>
+                <span class="text-[9px] font-bold px-1.5 rounded bg-sky-200/80 dark:bg-sky-900 text-sky-900 dark:text-sky-200">Regular</span>
+              </div>
+              <p id="kpi-client-lots" class="text-lg font-extrabold font-mono mt-2">0</p>
+              <p class="text-[10px] text-slate-500 dark:text-slate-400">Lots</p>
+            </div>
+
+            <div class="rounded-xl p-3 bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/60">
+              <div class="flex justify-between items-center">
+                <span class="text-[11px] font-bold text-indigo-800 dark:text-indigo-300">Block Trade</span>
+                <span class="text-[9px] font-bold px-1.5 rounded bg-indigo-200/80 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-200">Manual</span>
+              </div>
+              <p id="kpi-block-lots" class="text-lg font-extrabold font-mono text-indigo-700 dark:text-indigo-300 mt-2">0</p>
+              <p id="kpi-normal-sub" class="text-[10px] text-slate-500 dark:text-slate-400">Normal: 0</p>
+            </div>
+
+            <div class="col-span-2 sm:col-span-1 rounded-xl p-3 bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60">
+              <div class="flex justify-between items-center">
+                <span class="text-[11px] font-bold text-amber-800 dark:text-amber-300">Crosstrade</span>
+                <span class="text-[9px] font-bold px-1.5 rounded bg-amber-200/80 dark:bg-amber-900 text-amber-900 dark:text-amber-200">XT</span>
+              </div>
+              <p id="kpi-xt-lots" class="text-lg font-extrabold font-mono text-amber-600 dark:text-amber-400 mt-2">0</p>
+              <p id="kpi-xt-pairs" class="text-[10px] text-slate-500 dark:text-slate-400">0 pasang</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cascading Filters Row -->
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-3 items-end">
+          <!-- Product -->
+          <div class="xl:col-span-3">
+            <label class="block text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1" data-i18n="filterProductLabel">Filter Produk</label>
+            <select id="select-product" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-bold">
+              <option value="ALL">Semua Produk</option>
+            </select>
+          </div>
+
+          <!-- Contract -->
+          <div class="xl:col-span-3">
+            <label class="block text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1" data-i18n="filterContractLabel">Filter Kontrak</label>
+            <select id="select-contract" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs font-bold">
+              <option value="ALL">Semua Kontrak</option>
+            </select>
+          </div>
+
+          <!-- Account Criteria Pills -->
+          <div class="xl:col-span-3">
+            <div class="flex justify-between mb-1">
+              <label class="text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400" data-i18n="filterRoleLabel">Kriteria Akun</label>
+              <button id="btn-roles-all" type="button" class="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer" data-i18n="selectAll">Semua</button>
+            </div>
+            <div class="grid grid-cols-3 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              <button type="button" data-role="MM" class="role-btn py-1.5 rounded-lg text-xs font-extrabold bg-emerald-600 text-white cursor-pointer">✓ MM</button>
+              <button type="button" data-role="LP" class="role-btn py-1.5 rounded-lg text-xs font-extrabold bg-teal-600 text-white cursor-pointer">✓ LP</button>
+              <button type="button" data-role="CLIENT" class="role-btn py-1.5 rounded-lg text-xs font-extrabold bg-sky-600 text-white cursor-pointer">✓ Client</button>
+            </div>
+          </div>
+
+          <!-- Trade Condition Pills -->
+          <div class="xl:col-span-3">
+            <label class="block text-[11px] font-bold uppercase text-slate-500 dark:text-slate-400 mb-1" data-i18n="filterCondLabel">Tipe Trade / Crosstrade</label>
+            <div class="grid grid-cols-4 gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+              <button type="button" data-cond="ALL" class="cond-btn py-1.5 rounded-lg text-[11px] font-extrabold bg-[#144522] text-white cursor-pointer" data-i18n="pillAll">Semua</button>
+              <button type="button" data-cond="NORMAL" class="cond-btn py-1.5 rounded-lg text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer" data-i18n="pillNormal">Normal</button>
+              <button type="button" data-cond="BLOCK" class="cond-btn py-1.5 rounded-lg text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer" data-i18n="pillBlock">Block</button>
+              <button type="button" data-cond="CROSSTRADE" class="cond-btn py-1.5 rounded-lg text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer" data-i18n="pillXt">Cross</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NAVIGATION TABS -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-1.5 flex flex-wrap gap-1.5 shadow-sm no-print">
+        <button type="button" data-tab="report" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#144522] text-white cursor-pointer" data-i18n="tabReport">Laporan Resmi</button>
+        <button type="button" data-tab="breakdown" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer" data-i18n="tabBreakdown">Breakdown Sub Account &amp; Produk</button>
+        <button type="button" data-tab="audit" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+          <span data-i18n="tabAudit">Audit Log Trade</span>
+          <span id="badge-audit" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-slate-200 dark:bg-slate-700">0</span>
+        </button>
+        <button type="button" data-tab="history" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+          <span data-i18n="tabHistory">History &amp; Backup PC</span>
+          <span id="badge-history" class="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-bold">0</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: OFFICIAL REPORT -->
+      <div id="panel-report" class="space-y-4">
+        <!-- Report Layout Visibility Controls -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3 no-print">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-xs sm:text-sm font-bold" data-i18n="repLayoutTitle">Pengaturan Tampilan Laporan (MM / LPs / Client / Block)</h3>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400" data-i18n="repLayoutDesc">Berlaku otomatis pada tampilan layar, Export Excel, dan Export PDF.</p>
+            </div>
+            <div class="inline-flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">
+              <button type="button" data-layout="AUTO" class="layout-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-[#19612e] text-white cursor-pointer" data-i18n="layoutAuto">Auto (Sembunyikan 0)</button>
+              <button type="button" data-layout="ALL" class="layout-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer" data-i18n="layoutAll">Tampilkan Semua</button>
+              <button type="button" data-layout="CUSTOM" class="layout-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer" data-i18n="layoutCustom">Custom</button>
+            </div>
+          </div>
+
+          <div id="custom-layout-checks" class="hidden pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-3 text-xs font-semibold">
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
+              <input id="chk-sec-mm" type="checkbox" checked class="accent-emerald-600" />
+              <span>MM (Market Maker)</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
+              <input id="chk-sec-lp" type="checkbox" checked class="accent-emerald-600" />
+              <span>LPs (Liquidity Provider)</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
+              <input id="chk-sec-client" type="checkbox" checked class="accent-emerald-600" />
+              <span>Client Accounts</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
+              <input id="chk-sec-block" type="checkbox" checked class="accent-emerald-600" />
+              <span>Block Trade</span>
+            </label>
+            <label class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer">
+              <input id="chk-sec-proddetail" type="checkbox" checked class="accent-emerald-600" />
+              <span data-i18n="chkProdDetail">Rincian Produk di Client &amp; LP</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Printable Institutional Report Sheet -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-8 shadow-sm">
+          <div class="official-banner px-3 py-1.5 text-sm sm:text-base font-extrabold uppercase tracking-wide mb-3">
+            TRANSACTION VOLUME
+          </div>
+
+          <div class="grid grid-cols-[140px_1fr] sm:grid-cols-[175px_1fr] gap-y-1 text-xs sm:text-sm font-bold italic mb-4 px-1">
+            <div>Period</div>
+            <div>: <span id="rep-period">November 2026</span></div>
+
+            <div>Clearing Member</div>
+            <div>: <span id="rep-cm"></span></div>
+
+            <div>Account Number</div>
+            <div>: <span id="rep-acc">ALL</span></div>
+
+            <div>Date</div>
+            <div>: <span id="rep-date">Friday, 27 November 2026</span></div>
+          </div>
+
+          <div class="official-frame overflow-x-auto">
+            <table class="w-full border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr class="official-thead">
+                  <th class="text-left py-2 px-3 w-1/2 font-bold">Contract</th>
+                  <th class="text-right py-2 px-3 w-1/4 font-bold">Volume (lots)</th>
+                  <th class="text-right py-2 px-3 w-1/4 font-bold">USD</th>
+                </tr>
+              </thead>
+              <tbody id="official-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- Signature Footer -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-8 text-center text-xs font-bold">
+            <div><p class="mb-12">Acknowledged by</p><div class="border-b border-slate-400 dark:border-slate-600 mx-3"></div></div>
+            <div><p class="mb-12">Created/Updated by</p><div class="border-b border-slate-400 dark:border-slate-600 mx-3"></div></div>
+            <div><p class="mb-12">Approval</p><div class="border-b border-slate-400 dark:border-slate-600 mx-3"></div></div>
+            <div><p class="mb-12">Verified by</p><div class="border-b border-slate-400 dark:border-slate-600 mx-3"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: BREAKDOWN TABLE -->
+      <div id="panel-breakdown" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden no-print">
+        <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm sm:text-base font-bold" data-i18n="breakdownTitle">Ringkasan Volume per Sub Account &amp; Kontrak</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="breakdownDesc">Klasifikasi MM / LP / Client, Normal, Block Trade, dan Crosstrade.</p>
+          </div>
+          <input id="search-breakdown" type="text" placeholder="Cari Sub Account / Kontrak..." class="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs w-56" />
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 font-bold uppercase text-slate-600 dark:text-slate-300">
+                <th class="py-2.5 px-4">Sub Account</th>
+                <th class="py-2.5 px-4" data-i18n="thRole">Kategori</th>
+                <th class="py-2.5 px-4">Trading Acc</th>
+                <th class="py-2.5 px-4">Contract</th>
+                <th class="py-2.5 px-4">Product</th>
+                <th class="py-2.5 px-4 text-right">Normal</th>
+                <th class="py-2.5 px-4 text-right">Block Trade</th>
+                <th class="py-2.5 px-4 text-right">Crosstrade</th>
+                <th class="py-2.5 px-4 text-right">Total Lots</th>
+                <th class="py-2.5 px-4 text-right">USD</th>
+              </tr>
+            </thead>
+            <tbody id="breakdown-tbody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+            <tfoot id="breakdown-tfoot" class="bg-emerald-50/70 dark:bg-emerald-950/40 font-bold border-t-2 border-slate-300 dark:border-slate-700"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 3: AUDIT LOG -->
+      <div id="panel-audit" class="hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden no-print">
+        <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm sm:text-base font-bold" data-i18n="auditTitle">Audit Log Transaksi F&amp;O</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="auditDesc">Verifikasi Normal vs Block Trade dan pasangan Crosstrade 1-to-1.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <select id="select-audit-status" class="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs font-semibold">
+              <option value="ALL" data-i18n="auditAll">Semua Status</option>
+              <option value="CROSSTRADE" data-i18n="auditXt">Crosstrade Only</option>
+              <option value="BLOCK" data-i18n="auditBlock">Block Trade Only</option>
+              <option value="NORMAL" data-i18n="auditNormal">Normal Non-XT</option>
+            </select>
+            <input id="search-audit" type="text" placeholder="Cari Trade ID / Sub Acc..." class="rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-xs w-52" />
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 font-bold uppercase text-slate-600 dark:text-slate-300">
+                <th class="py-2.5 px-3">Date &amp; Time</th>
+                <th class="py-2.5 px-3">Trading Acc</th>
+                <th class="py-2.5 px-3">Sub Account</th>
+                <th class="py-2.5 px-3">Role</th>
+                <th class="py-2.5 px-3">Contract</th>
+                <th class="py-2.5 px-3 text-center">B/S</th>
+                <th class="py-2.5 px-3 text-right">Lots</th>
+                <th class="py-2.5 px-3 text-right">Price</th>
+                <th class="py-2.5 px-3">Type</th>
+                <th class="py-2.5 px-3">Crosstrade</th>
+                <th class="py-2.5 px-3">Trade ID</th>
+              </tr>
+            </thead>
+            <tbody id="audit-tbody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+        <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 flex justify-between">
+          <span id="audit-info">0 transaksi</span>
+          <span>Preview max 300 baris</span>
+        </div>
+      </div>
+
+      <!-- TAB 4: HISTORY & PC BACKUP -->
+      <div id="panel-history" class="hidden space-y-5 no-print">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <!-- PC Backup Folder Card -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm sm:text-base font-bold" data-i18n="pcBackupTitle">Folder Backup PC &amp; Auto-Save</h3>
+              <span id="pc-badge-detail" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800">Browser IndexedDB</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="pcBackupDesc">
+              Hubungkan folder PC lokal agar setiap import otomatis menyimpan snapshot JSON &amp; rekap Excel ke komputer Anda.
+            </p>
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+              <span id="pc-folder-label" class="font-mono text-xs font-bold truncate">Belum ada folder PC dipilih</span>
+              <button id="btn-pick-folder" type="button" class="shrink-0 px-3 py-1.5 rounded-xl bg-[#19612e] hover:bg-[#144522] text-white text-xs font-bold cursor-pointer" data-i18n="btnSelectFolder">
+                Pilih Folder PC
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-1">
+              <button id="btn-backup-now" type="button" class="px-3.5 py-2 rounded-xl bg-[#144522] text-white text-xs font-bold cursor-pointer" data-i18n="btnBackupNow">Backup Sekarang</button>
+              <button id="btn-scan-folder" type="button" class="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold cursor-pointer" data-i18n="btnScanFolder">Scan Folder PC</button>
+            </div>
+          </div>
+
+          <!-- Active Daily Coverage Card -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm sm:text-base font-bold" data-i18n="dailyCoverageTitle">Cakupan Tanggal Harian Aktif</h3>
+              <button id="btn-add-more-files" type="button" class="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold cursor-pointer" data-i18n="btnAddFiles">
+                + Tambah File Harian
+              </button>
+            </div>
+            <div id="daily-cards-box" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto"></div>
+          </div>
+        </div>
+
+        <!-- History Archive Table -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-sm sm:text-base font-bold" data-i18n="historyTableTitle">Riwayat Backup &amp; Snapshot</h3>
+            <button id="btn-clear-history" type="button" class="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900 text-rose-600 dark:text-rose-400 text-xs font-semibold cursor-pointer" data-i18n="btnClearHistory">
+              Bersihkan Arsip Browser
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 font-bold uppercase text-slate-600 dark:text-slate-300">
+                  <th class="py-2.5 px-4">Waktu</th>
+                  <th class="py-2.5 px-4">Sumber</th>
+                  <th class="py-2.5 px-4">Nama Batch / File</th>
+                  <th class="py-2.5 px-4">Tanggal Trading</th>
+                  <th class="py-2.5 px-4 text-right">Baris</th>
+                  <th class="py-2.5 px-4 text-right">Total Lots</th>
+                  <th class="py-2.5 px-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="history-tbody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- MODAL 1: IMPORT SINGLE / MULTIPLE FILES -->
+  <div id="modal-import" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-xl w-full shadow-2xl overflow-hidden">
+      <div class="px-5 py-3.5 bg-[#144522] dark:bg-slate-800 text-white flex items-center justify-between">
+        <h3 class="font-bold text-sm sm:text-base" data-i18n="importModalTitle">Import F&amp;O Trade Listing (1 File / Multiple)</h3>
+        <button id="btn-close-import" type="button" class="text-white/80 hover:text-white font-bold cursor-pointer">✕</button>
+      </div>
+      <div class="p-5 space-y-4 text-xs">
+        <div class="grid grid-cols-2 gap-2.5">
+          <label class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer flex items-start gap-2">
+            <input type="radio" name="imp-mode" value="append" checked class="mt-0.5 accent-emerald-600" />
+            <div>
+              <span class="font-bold block" data-i18n="impAppend">Gabungkan (Append)</span>
+              <span class="text-[11px] text-slate-500" data-i18n="impAppendDesc">Tambah harian ke periodik</span>
+            </div>
+          </label>
+          <label class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer flex items-start gap-2">
+            <input type="radio" name="imp-mode" value="replace" class="mt-0.5 accent-emerald-600" />
+            <div>
+              <span class="font-bold block" data-i18n="impReplace">Ganti Semua (Replace)</span>
+              <span class="text-[11px] text-slate-500" data-i18n="impReplaceDesc">Timpa data aktif saat ini</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <button id="btn-choose-single" type="button" class="py-3 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-[#144522] dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700 font-bold cursor-pointer" data-i18n="btnSingleFile">
+            Pilih 1 File (Satuan)
+          </button>
+          <button id="btn-choose-multi" type="button" class="py-3 px-4 rounded-xl bg-[#19612e] hover:bg-[#144522] text-white font-bold cursor-pointer" data-i18n="btnMultiFile">
+            Pilih Banyak File (Multiple)
+          </button>
+        </div>
+
+        <label class="flex items-center gap-2 font-semibold">
+          <input id="chk-dedup" type="checkbox" checked class="accent-emerald-600" />
+          <span data-i18n="dedupLabel">Cegah duplikat otomatis (berdasarkan Trade ID + Tanggal)</span>
+        </label>
+
+        <div id="dropzone" class="border-2 border-dashed border-emerald-400 dark:border-emerald-700 rounded-2xl p-6 text-center bg-emerald-50/40 dark:bg-emerald-950/20 cursor-pointer">
+          <p class="font-bold text-sm" data-i18n="dropTitle">Seret &amp; lepas file CSV / XLSX / XLS / JSON ke sini</p>
+          <p class="text-[11px] text-slate-500 mt-1" data-i18n="dropSub">Bisa 1 file atau banyak file harian sekaligus</p>
+          <input id="file-single" type="file" accept=".csv,.xlsx,.xls,.json" class="hidden" />
+          <input id="file-multi" type="file" accept=".csv,.xlsx,.xls,.json" multiple class="hidden" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: ACCOUNT CLASSIFICATION MAPPING & REPORT HEADER -->
+  <div id="modal-mapping" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-xl w-full shadow-2xl overflow-hidden">
+      <div class="px-5 py-3.5 bg-[#144522] dark:bg-slate-800 text-white flex items-center justify-between">
+        <h3 class="font-bold text-sm sm:text-base" data-i18n="mappingModalTitle">Mapping Akun MM / LP / Client &amp; Header</h3>
+        <button id="btn-close-mapping" type="button" class="text-white/80 hover:text-white font-bold cursor-pointer">✕</button>
+      </div>
+      <div class="p-5 space-y-4 text-xs max-h-[80vh] overflow-y-auto">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold mb-1" data-i18n="cmLabel">Clearing Member (Kosong Default)</label>
+            <input id="cfg-cm" type="text" placeholder="" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2" />
+          </div>
+          <div>
+            <label class="block font-bold mb-1" data-i18n="repDateLabel">Tanggal Laporan (Date)</label>
+            <input id="cfg-rep-date" type="text" value="Friday, 27 November 2026" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold text-emerald-700 dark:text-emerald-400 mb-1">MM (Market Maker) Sub Accounts</label>
+            <textarea id="cfg-mm" rows="4" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 font-mono"></textarea>
+          </div>
+          <div>
+            <label class="block font-bold text-teal-700 dark:text-teal-400 mb-1">LPs (Liquidity Provider) Sub Accounts</label>
+            <textarea id="cfg-lp" rows="4" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 font-mono"></textarea>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-bold mb-1" data-i18n="usdSourceLabel">Sumber Nilai USD</label>
+            <select id="cfg-usd-mode" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 font-semibold">
+              <option value="FEE_RATE">Rate Refund Fee per Lot (USD)</option>
+              <option value="AMOUNT_COL">Kolom Amount CSV/Excel</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold mb-1" data-i18n="feeRateLabel">Rate per Lot (USD)</label>
+            <input id="cfg-fee-rate" type="number" step="0.01" min="0" value="0.00" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 font-mono" />
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+          <button id="btn-auto-lp" type="button" class="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer" data-i18n="btnAutoLp">
+            + Masukkan Sub Account Unmapped ke LPs
+          </button>
+          <div class="flex gap-2">
+            <button id="btn-cancel-mapping" type="button" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-semibold cursor-pointer" data-i18n="btnCancel">Batal</button>
+            <button id="btn-save-mapping" type="button" class="px-4 py-2 rounded-xl bg-[#19612e] text-white font-bold cursor-pointer" data-i18n="btnSave">Simpan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. BILINGUAL DICTIONARY & STATE
+    // =========================================================================
+    const LANG = {
+      id: {
+        appTitle: 'TRANSACTION VOLUME SUMMARY',
+        backupLocalLabel: 'Arsip Lokal',
+        backupPcLabel: 'PC Folder',
+        btnImport: '+ Import F&O Listing',
+        btnMapping: 'Mapping MM / LP & Rate',
+        btnExcel: 'Export Excel',
+        btnPdf: 'Export PDF',
+        activeDataset: 'Dataset Aktif',
+        btnResetSample: 'Reset Sample',
+        btnHistoryTab: 'History & Backup',
+        historyDateTitle: 'History Date (Pilih Tanggal)',
+        historyDateDesc: 'Pilih tanggal harian dari dataset aktif atau arsip backup untuk tampilan Daily instan.',
+        allDatesPeriodic: '-- Semua Tanggal (Mode Periodik) --',
+        sideFilterTitle: 'Periode & Detail Akun',
+        btnResetAll: 'Reset',
+        periodModeLabel: '1. Mode Periode Volume',
+        modeDaily: 'Daily',
+        modePeriodic: 'Periodik',
+        selectDateLabel: 'Tanggal Trading',
+        fromDate: 'Dari',
+        toDate: 'Sampai',
+        periodLabelText: 'Label Period Laporan',
+        taRuleTitle: '2. CM / Trading Account & Crosstrade',
+        allTaOpt: 'Semua Trading Account',
+        xtInclude: 'Sertakan Semua (Normal + Crosstrade)',
+        xtExclude: 'Kecualikan Crosstrade',
+        xtOnly: 'Hanya Crosstrade',
+        xtAccountRule: 'Ikuti Kondisi Per Trading Account',
+        perAccRuleLabel: 'Kondisi Per Trading Account:',
+        flagXtLabel: 'Crosstrade',
+        subAccFilterTitle: '3. Sub Account',
+        selectAll: 'Semua',
+        clearAll: 'Hapus',
+        kpiTotal: 'Total Keseluruhan Volume',
+        filterProductLabel: 'Filter Produk',
+        filterContractLabel: 'Filter Kontrak',
+        filterRoleLabel: 'Kriteria Akun',
+        filterCondLabel: 'Tipe Trade / Crosstrade',
+        allProducts: 'Semua Produk',
+        allContracts: 'Semua Kontrak',
+        pillAll: 'Semua',
+        pillNormal: 'Normal',
+        pillBlock: 'Block',
+        pillXt: 'Cross',
+        tabReport: 'Laporan Resmi',
+        tabBreakdown: 'Breakdown Sub Account & Produk',
+        tabAudit: 'Audit Log Trade',
+        tabHistory: 'History & Backup PC',
+        repLayoutTitle: 'Pengaturan Tampilan Laporan (MM / LPs / Client / Block)',
+        repLayoutDesc: 'Berlaku otomatis pada tampilan layar, Export Excel, dan Export PDF.',
+        layoutAuto: 'Auto (Sembunyikan 0)',
+        layoutAll: 'Tampilkan Semua',
+        layoutCustom: 'Custom',
+        chkProdDetail: 'Rincian Produk di Client & LP',
+        breakdownTitle: 'Ringkasan Volume per Sub Account & Kontrak',
+        breakdownDesc: 'Klasifikasi MM / LP / Client, Normal, Block Trade, dan Crosstrade.',
+        thRole: 'Kategori',
+        auditTitle: 'Audit Log Transaksi F&O',
+        auditDesc: 'Verifikasi Normal vs Block Trade dan pasangan Crosstrade 1-to-1.',
+        auditAll: 'Semua Status',
+        auditXt: 'Crosstrade Only',
+        auditBlock: 'Block Trade Only',
+        auditNormal: 'Normal Non-XT',
+        pcBackupTitle: 'Folder Backup PC & Auto-Save',
+        pcBackupDesc: 'Hubungkan folder PC lokal agar setiap import otomatis menyimpan snapshot JSON & rekap Excel ke komputer Anda.',
+        btnSelectFolder: 'Pilih Folder PC',
+        btnBackupNow: 'Backup Sekarang',
+        btnScanFolder: 'Scan Folder PC',
+        dailyCoverageTitle: 'Cakupan Tanggal Harian Aktif',
+        btnAddFiles: '+ Tambah File Harian',
+        historyTableTitle: 'Riwayat Backup & Snapshot',
+        btnClearHistory: 'Bersihkan Arsip Browser',
+        importModalTitle: 'Import F&O Trade Listing (1 File / Multiple)',
+        impAppend: 'Gabungkan (Append)',
+        impAppendDesc: 'Tambah harian ke periodik',
+        impReplace: 'Ganti Semua (Replace)',
+        impReplaceDesc: 'Timpa data aktif saat ini',
+        btnSingleFile: 'Pilih 1 File (Satuan)',
+        btnMultiFile: 'Pilih Banyak File (Multiple)',
+        dedupLabel: 'Cegah duplikat otomatis (berdasarkan Trade ID + Tanggal)',
+        dropTitle: 'Seret & lepas file CSV / XLSX / XLS / JSON ke sini',
+        dropSub: 'Bisa 1 file atau banyak file harian sekaligus',
+        mappingModalTitle: 'Mapping Akun MM / LP / Client & Header',
+        cmLabel: 'Clearing Member (Kosong Default)',
+        repDateLabel: 'Tanggal Laporan (Date)',
+        usdSourceLabel: 'Sumber Nilai USD',
+        feeRateLabel: 'Rate per Lot (USD)',
+        btnAutoLp: '+ Masukkan Sub Account Unmapped ke LPs',
+        btnCancel: 'Batal',
+        btnSave: 'Simpan'
+      },
+      en: {
+        appTitle: 'TRANSACTION VOLUME SUMMARY',
+        backupLocalLabel: 'Local Archive',
+        backupPcLabel: 'PC Folder',
+        btnImport: '+ Import F&O Listing',
+        btnMapping: 'MM / LP Mapping & Rate',
+        btnExcel: 'Export Excel',
+        btnPdf: 'Export PDF',
+        activeDataset: 'Active Dataset',
+        btnResetSample: 'Reset Sample',
+        btnHistoryTab: 'History & Backup',
+        historyDateTitle: 'History Date (Select Date)',
+        historyDateDesc: 'Select any daily date from active memory or backup archive for instant Daily summary.',
+        allDatesPeriodic: '-- All Dates (Periodic Mode) --',
+        sideFilterTitle: 'Period & Account Details',
+        btnResetAll: 'Reset',
+        periodModeLabel: '1. Volume Period Mode',
+        modeDaily: 'Daily',
+        modePeriodic: 'Periodic',
+        selectDateLabel: 'Trading Date',
+        fromDate: 'From',
+        toDate: 'To',
+        periodLabelText: 'Report Period Label',
+        taRuleTitle: '2. CM / Trading Account & Crosstrade',
+        allTaOpt: 'All Trading Accounts',
+        xtInclude: 'Include All (Normal + Crosstrade)',
+        xtExclude: 'Exclude Crosstrade',
+        xtOnly: 'Crosstrade Only',
+        xtAccountRule: 'Use Per-Trading-Account Rules',
+        perAccRuleLabel: 'Per-Trading-Account Rules:',
+        flagXtLabel: 'Crosstrade',
+        subAccFilterTitle: '3. Sub Account',
+        selectAll: 'All',
+        clearAll: 'Clear',
+        kpiTotal: 'Total Overall Volume',
+        filterProductLabel: 'Filter Product',
+        filterContractLabel: 'Filter Contract',
+        filterRoleLabel: 'Account Criteria',
+        filterCondLabel: 'Trade Type / Crosstrade',
+        allProducts: 'All Products',
+        allContracts: 'All Contracts',
+        pillAll: 'All',
+        pillNormal: 'Normal',
+        pillBlock: 'Block',
+        pillXt: 'Cross',
+        tabReport: 'Official Report',
+        tabBreakdown: 'Sub Account & Product Breakdown',
+        tabAudit: 'Trade Audit Log',
+        tabHistory: 'History & PC Backup',
+        repLayoutTitle: 'Report Layout Settings (MM / LPs / Client / Block)',
+        repLayoutDesc: 'Applies automatically to screen preview, Excel Export, and PDF Export.',
+        layoutAuto: 'Auto (Hide 0)',
+        layoutAll: 'Show All',
+        layoutCustom: 'Custom',
+        chkProdDetail: 'Show Product Breakdown in Client & LP',
+        breakdownTitle: 'Volume Summary by Sub Account & Contract',
+        breakdownDesc: 'Classification of MM / LP / Client, Normal, Block Trade, and Crosstrade.',
+        thRole: 'Category',
+        auditTitle: 'F&O Transaction Audit Log',
+        auditDesc: 'Verify Normal vs Block Trade and 1-to-1 Crosstrade pairs.',
+        auditAll: 'All Statuses',
+        auditXt: 'Crosstrade Only',
+        auditBlock: 'Block Trade Only',
+        auditNormal: 'Normal Non-XT',
+        pcBackupTitle: 'PC Backup Folder & Auto-Save',
+        pcBackupDesc: 'Connect a local PC folder to automatically write JSON snapshots & Excel summaries on every import.',
+        btnSelectFolder: 'Select PC Folder',
+        btnBackupNow: 'Backup Now',
+        btnScanFolder: 'Scan PC Folder',
+        dailyCoverageTitle: 'Active Daily Dates Coverage',
+        btnAddFiles: '+ Add Daily Files',
+        historyTableTitle: 'Backup & Snapshot History',
+        btnClearHistory: 'Clear Browser Archive',
+        importModalTitle: 'Import F&O Trade Listing (Single / Multiple)',
+        impAppend: 'Append to Active',
+        impAppendDesc: 'Add daily files to periodic total',
+        impReplace: 'Replace All',
+        impReplaceDesc: 'Overwrite current dataset',
+        btnSingleFile: 'Select 1 File (Single)',
+        btnMultiFile: 'Select Multiple Files',
+        dedupLabel: 'Prevent duplicates automatically (by Trade ID + Date)',
+        dropTitle: 'Drag & drop CSV / XLSX / XLS / JSON files here',
+        dropSub: 'Supports single file or multiple daily files at once',
+        mappingModalTitle: 'MM / LP / Client Account Mapping & Header',
+        cmLabel: 'Clearing Member (Blank by Default)',
+        repDateLabel: 'Report Date',
+        usdSourceLabel: 'USD Value Source',
+        feeRateLabel: 'Fee Rate per Lot (USD)',
+        btnAutoLp: '+ Add Unmapped Sub Accounts to LPs',
+        btnCancel: 'Cancel',
+        btnSave: 'Save'
+      }
+    };
+
+    const SAMPLE_CSV = `Trading Account Number,Sub Account,Trading Date,Contract Ticker,Parent Product,B/S,Quantity,Trade Price,Contract/Premium Amount,Trade Type,Order Channel,Execution Time,Trade ID
+1001A,10015550002,2026-11-16,F-XACM-NCP-202701,F-XACM-NCP,Buy,30,2630.50,0.00,Normal,DMA,09:10:05,TRD-261116-001
+1001A,10015550003,2026-11-16,F-XACM-NPT-202612,F-XACM-NPT,Sell,45,2631.00,0.00,Normal,DMA,09:25:18,TRD-261116-002
+1001A,10015550005,2026-11-16,F-XACM-2SO-202702,F-XACM-2SO,Buy,55,2631.80,0.00,Normal,DMA,09:42:10,TRD-261116-003
+1001B,10014500013,2026-11-16,F-XACM-NSI-202612,F-XACM-NSI,Buy,90,2632.20,0.00,Normal,API,10:02:40,TRD-261116-004
+1001B,10014500016,2026-11-16,F-XACM-NCP-202701,F-XACM-NCP,Sell,70,2633.00,0.00,Normal,API,10:40:11,TRD-261116-005
+1001B,10014500017,2026-11-16,F-XACM-2SO-202702,F-XACM-2SO,Buy,65,2633.50,0.00,Normal,API,10:55:20,TRD-261116-006
+1001C,10017890002,2026-11-16,F-XACM-2SO-202702,F-XACM-2SO,Buy,40,2634.00,0.00,Normal,DMA,11:15:00,TRD-261116-007
+1001C,10017890002,2026-11-16,F-XACM-2SO-202702,F-XACM-2SO,Sell,40,2634.00,0.00,Normal,DMA,11:15:00,TRD-261116-008
+1001D,10015550005,2026-11-16,F-XACM-NSI-202612,F-XACM-NSI,Buy,1200,2635.00,0.00,Blocktrade,Manual Fills,14:30:00,TRD-261116-009
+1001A,10015550002,2026-11-13,F-XACM-NCP-202701,F-XACM-NCP,Buy,25,2618.50,0.00,Normal,DMA,09:15:10,TRD-261113-001
+1001A,10015550003,2026-11-13,F-XACM-NPT-202612,F-XACM-NPT,Buy,60,2620.10,0.00,Normal,DMA,09:40:12,TRD-261113-002
+1001B,10014500013,2026-11-13,F-XACM-NCP-202701,F-XACM-NCP,Buy,120,2623.50,0.00,Normal,API,10:30:18,TRD-261113-003
+1001B,10014500015,2026-11-13,F-XACM-NPT-202612,F-XACM-NPT,Sell,95,2624.00,0.00,Normal,API,11:02:44,TRD-261113-004
+1001C,10014500325,2026-11-13,F-XACM-NSI-202612,F-XACM-NSI,Buy,85,2627.00,0.00,Normal,DMA,14:25:10,TRD-261113-005
+1001D,10015550002,2026-11-13,F-XACM-NCP-202701,F-XACM-NCP,Buy,2400,2625.00,0.00,Blocktrade,Manual Fills,14:00:00,TRD-261113-006
+1001D,10015550003,2026-11-13,F-XACM-NCP-202701,F-XACM-NCP,Sell,2400,2625.00,0.00,Blocktrade,Manual Fills,14:00:00,TRD-261113-007`;
+
+    const state = {
+      lang: localStorage.getItem('tv_lang') || 'id',
+      dark: localStorage.getItem('tv_theme') === 'dark',
+      rawTrades: [],
+      filteredTrades: [],
+      periodMode: 'periodic',
+      selectedSubs: new Set(),
+      allSubs: [],
+      allTAs: [],
+      taXtFlags: {},
+      selectedRoles: new Set(['MM', 'LP', 'CLIENT']),
+      tradeCond: 'ALL',
+      layout: {
+        mode: 'AUTO',
+        showMM: true,
+        showLP: true,
+        showClient: true,
+        showBlock: true,
+        showProdDetail: true
+      },
+      config: JSON.parse(localStorage.getItem('tv_mapping_cfg') || 'null') || {
+        clearingMember: '',
+        reportDate: 'Friday, 27 November 2026',
+        mmAccounts: ['10015550002', '10015550003', '10015550005'],
+        lpAccounts: ['10014500013', '10014500015', '10014500016', '10014500017'],
+        usdMode: 'FEE_RATE',
+        feeRate: 0.00
+      },
+      pcDirHandle: null,
+      pcSnapshots: [],
+      dbSnapshots: []
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const t = (k) => (LANG[state.lang] && LANG[state.lang][k]) || LANG.id[k] || k;
+
+    function toast(msg, type = 'ok') {
+      const box = $('toast-box');
+      const el = document.createElement('div');
+      const bg = type === 'err' ? 'bg-rose-700 border-rose-300' : type === 'info' ? 'bg-slate-800 border-sky-400' : 'bg-[#144522] border-emerald-400';
+      el.className = `pointer-events-auto px-4 py-2.5 rounded-xl text-white text-xs font-semibold shadow-lg border-l-4 ${bg}`;
+      el.textContent = msg;
+      box.appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    }
+
+    function fmtLots(n) {
+      if (!n) return '0';
+      return Number.isInteger(n) ? n.toLocaleString('en-US') : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function fmtUsd(n) {
+      return '$' + (n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // =========================================================================
+    // 2. THEME & LANGUAGE
+    // =========================================================================
+    function applyTheme() {
+      document.documentElement.classList.toggle('dark', state.dark);
+      $('theme-icon').textContent = state.dark ? '☀️' : '🌙';
+    }
+
+    function applyLanguage() {
+      $('btn-lang-id').className = state.lang === 'id'
+        ? 'px-2.5 py-1 rounded-lg text-xs font-bold bg-[#539e38] text-white cursor-pointer'
+        : 'px-2.5 py-1 rounded-lg text-xs font-bold text-white/75 hover:text-white cursor-pointer';
+      $('btn-lang-en').className = state.lang === 'en'
+        ? 'px-2.5 py-1 rounded-lg text-xs font-bold bg-[#539e38] text-white cursor-pointer'
+        : 'px-2.5 py-1 rounded-lg text-xs font-bold text-white/75 hover:text-white cursor-pointer';
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        el.textContent = t(el.getAttribute('data-i18n'));
+      });
+      refreshCascadingDropdowns();
+      refreshHistoryDateSelect();
+      renderAll();
+    }
+
+    // =========================================================================
+    // 3. DATA PARSING, CLASSIFICATION & CROSSTRADE DETECTION
+    // =========================================================================
+    function normDate(v) {
+      if (!v) return '';
+      const s = String(v).trim();
+      if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(s)) {
+        const p = s.split(/[-/\sT]/);
+        return `${p[0]}-${p[1].padStart(2, '0')}-${p[2].padStart(2, '0')}`;
+      }
+      if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}/.test(s)) {
+        const p = s.split(/[-/\sT]/);
+        return `${p[2]}-${p[1].padStart(2, '0')}-${p[0].padStart(2, '0')}`;
+      }
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? s : d.toISOString().slice(0, 10);
+    }
+
+    function normBS(v) {
+      const s = String(v || '').trim().toUpperCase();
+      if (s === 'B' || s === 'BUY') return 'Buy';
+      if (s === 'S' || s === 'SELL') return 'Sell';
+      return s || 'Unknown';
+    }
+
+    function inferProduct(contract, rawProd) {
+      if (rawProd && rawProd.trim()) return rawProd.trim();
+      const parts = String(contract || '').split('-');
+      if (parts.length >= 3 && /^\d{4,6}$/.test(parts[parts.length - 1])) {
+        return parts.slice(0, -1).join('-');
+      }
+      return contract || 'UNKNOWN';
+    }
+
+    function getRole(subAcc) {
+      if (state.config.mmAccounts.includes(subAcc)) return 'MM';
+      if (state.config.lpAccounts.includes(subAcc)) return 'LP';
+      return 'CLIENT';
+    }
+
+    function getTradeUsd(tr) {
+      return state.config.usdMode === 'AMOUNT_COL' ? (tr.amount || 0) : (tr.quantity || 0) * (state.config.feeRate || 0);
+    }
+
+    function isXtEffective(tr) {
+      return tr.isCrosstrade || Boolean(state.taXtFlags[tr.tradingAccount]);
+    }
+
+    function detectCrosstrades(trades) {
+      trades.forEach(tr => { tr.isCrosstrade = false; tr.xtPairId = null; });
+      const buckets = new Map();
+      trades.forEach((tr, idx) => {
+        const key = `${tr.subAccount}|${tr.contractTicker}|${tr.tradingDate}|${tr.execTime}|${tr.tradePrice.toFixed(6)}|${tr.quantity.toFixed(4)}`;
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(idx);
+      });
+      let pairNum = 1;
+      buckets.forEach(idxs => {
+        if (idxs.length < 2) return;
+        const buys = idxs.filter(i => trades[i].bs === 'Buy');
+        const sells = idxs.filter(i => trades[i].bs === 'Sell');
+        const pairs = Math.min(buys.length, sells.length);
+        for (let p = 0; p < pairs; p++) {
+          const id = `XT-${String(pairNum++).padStart(3, '0')}`;
+          trades[buys[p]].isCrosstrade = true;
+          trades[buys[p]].xtPairId = id;
+          trades[sells[p]].isCrosstrade = true;
+          trades[sells[p]].xtPairId = id;
+        }
+      });
+    }
+
+    function ingestRows(rows, label, append = false, dedup = true) {
+      const normalized = rows.map((r, i) => {
+        const col = (...names) => {
+          for (const n of names) {
+            if (r[n] !== undefined && r[n] !== null && String(r[n]).trim() !== '') return String(r[n]).trim();
+            const k = Object.keys(r).find(x => x.trim().toLowerCase() === n.toLowerCase());
+            if (k && r[k] !== undefined && r[k] !== null && String(r[k]).trim() !== '') return String(r[k]).trim();
+          }
+          return '';
+        };
+        const subAccount = col('Sub Account', 'SubAccount', 'Client Account');
+        const contractTicker = col('Contract Ticker', 'Contract', 'Symbol');
+        const quantity = parseFloat(col('Quantity', 'Volume', 'Lots', 'Qty').replace(/,/g, '')) || 0;
+        if (!subAccount && !contractTicker && quantity === 0) return null;
+
+        const tradingAccount = col('Trading Account Number', 'Trading Account', 'Account Number') || 'UNKNOWN';
+        const tradingDate = normDate(col('Trading Date', 'Trade Date', 'Date'));
+        const parentProduct = inferProduct(contractTicker, col('Parent Product', 'Product'));
+        const bs = normBS(col('B/S', 'Side', 'Buy/Sell'));
+        const tradePrice = parseFloat(col('Trade Price', 'Price').replace(/,/g, '')) || 0;
+        const amount = parseFloat(col('Contract/Premium Amount', 'Amount', 'USD').replace(/,/g, '')) || 0;
+        const rawType = col('Trade Type', 'Type') || 'Normal';
+        const channel = col('Order Channel', 'Channel', 'Trade Code');
+        const execTime = col('Execution Time', 'Trade Time', 'Time');
+        const tradeId = col('Trade ID', 'TradeID') || `ROW-${i + 1}`;
+        const isBlock = `${rawType} ${channel}`.toLowerCase().includes('block') || `${rawType} ${channel}`.toLowerCase().includes('manual');
+
+        return {
+          tradingAccount,
+          subAccount: subAccount || 'UNASSIGNED',
+          tradingDate,
+          contractTicker: contractTicker || 'UNKNOWN',
+          parentProduct,
+          bs,
+          quantity,
+          tradePrice,
+          amount,
+          rawType,
+          channel,
+          execTime,
+          tradeId,
+          category: isBlock ? 'BLOCK' : 'NORMAL',
+          isCrosstrade: false,
+          xtPairId: null
+        };
+      }).filter(Boolean);
+
+      if (!normalized.length) {
+        toast(state.lang === 'id' ? 'Tidak ada data transaksi valid.' : 'No valid rows found.', 'err');
+        return 0;
+      }
+
+      const before = state.rawTrades.length;
+      if (append && before > 0) {
+        if (dedup) {
+          const seen = new Set(state.rawTrades.map(x => `${x.tradingDate}|${x.tradeId}|${x.subAccount}|${x.contractTicker}|${x.bs}|${x.quantity}`));
+          normalized.forEach(item => {
+            const key = `${item.tradingDate}|${item.tradeId}|${item.subAccount}|${item.contractTicker}|${item.bs}|${item.quantity}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              state.rawTrades.push(item);
+            }
+          });
+        } else {
+          state.rawTrades = state.rawTrades.concat(normalized);
+        }
+      } else {
+        state.rawTrades = normalized;
+      }
+
+      detectCrosstrades(state.rawTrades);
+      const uniqueDates = [...new Set(state.rawTrades.map(x => x.tradingDate).filter(Boolean))].sort();
+      $('dataset-name').textContent = label;
+      $('dataset-badge').textContent = label.includes('Sample') ? 'Sample' : 'Live';
+      $('dataset-stats').textContent = `${state.rawTrades.length.toLocaleString('en-US')} ${state.lang === 'id' ? 'baris' : 'rows'} • ${uniqueDates.length} ${state.lang === 'id' ? 'hari' : 'days'}`;
+
+      initFiltersFromData();
+      renderAll();
+      return append && before > 0 ? state.rawTrades.length - before : state.rawTrades.length;
+    }
+
+    // =========================================================================
+    // 4. CASCADING FILTERS & CORE FILTERING
+    // =========================================================================
+    function initFiltersFromData() {
+      const dates = [...new Set(state.rawTrades.map(x => x.tradingDate).filter(Boolean))].sort().reverse();
+      $('input-daily-date').innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join('');
+      if (dates.length) {
+        $('input-start-date').value = dates[dates.length - 1];
+        $('input-end-date').value = dates[0];
+        const dt = new Date(dates[0] + 'T00:00:00');
+        $('input-period-label').value = isNaN(dt.getTime()) ? dates[0] : dt.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      }
+
+      state.allTAs = [...new Set(state.rawTrades.map(x => x.tradingAccount))].sort();
+      $('select-trading-account').innerHTML = `<option value="ALL">${t('allTaOpt')} (${state.allTAs.length})</option>` +
+        state.allTAs.map(ta => `<option value="${ta}">${ta}</option>`).join('');
+
+      $('ta-xt-list').innerHTML = state.allTAs.map(ta => `
+        <label class="flex items-center justify-between text-[11px] bg-white dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 cursor-pointer">
+          <span class="font-mono font-bold">${ta}</span>
+          <span class="flex items-center gap-1">
+            <input type="checkbox" data-ta="${ta}" ${state.taXtFlags[ta] ? 'checked' : ''} class="chk-ta-xt accent-amber-600" />
+            <span>XT</span>
+          </span>
+        </label>
+      `).join('');
+
+      state.allSubs = [...new Set(state.rawTrades.map(x => x.subAccount))].sort();
+      state.selectedSubs = new Set(state.allSubs);
+      refreshCascadingDropdowns();
+      refreshHistoryDateSelect();
+    }
+
+    function refreshCascadingDropdowns() {
+      const taVal = $('select-trading-account').value;
+      const scoped = state.rawTrades.filter(x => taVal === 'ALL' || x.tradingAccount === taVal);
+
+      // Products scoped to selected CM / Trading Account
+      const prods = [...new Set(scoped.map(x => x.parentProduct).filter(Boolean))].sort();
+      const prevProd = $('select-product').value;
+      $('select-product').innerHTML = `<option value="ALL">${t('allProducts')} (${prods.length})</option>` +
+        prods.map(p => `<option value="${p}">${p}</option>`).join('');
+      $('select-product').value = prods.includes(prevProd) ? prevProd : 'ALL';
+
+      refreshContractsDropdown();
+
+      // Ensure sub-accounts in selected CM are checked
+      const scopedSubs = [...new Set(scoped.map(x => x.subAccount))].sort();
+      if (taVal !== 'ALL' && !scopedSubs.some(s => state.selectedSubs.has(s))) {
+        scopedSubs.forEach(s => state.selectedSubs.add(s));
+      }
+      renderSubAccountCheckboxes();
+    }
+
+    function refreshContractsDropdown() {
+      const taVal = $('select-trading-account').value;
+      const prodVal = $('select-product').value;
+      const contracts = [...new Set(
+        state.rawTrades
+          .filter(x => taVal === 'ALL' || x.tradingAccount === taVal)
+          .filter(x => prodVal === 'ALL' || x.parentProduct === prodVal)
+          .map(x => x.contractTicker)
+          .filter(Boolean)
+      )].sort();
+      const prevCont = $('select-contract').value;
+      $('select-contract').innerHTML = `<option value="ALL">${t('allContracts')} (${contracts.length})</option>` +
+        contracts.map(c => `<option value="${c}">${c}</option>`).join('');
+      $('select-contract').value = contracts.includes(prevCont) ? prevCont : 'ALL';
+    }
+
+    function renderSubAccountCheckboxes() {
+      const taVal = $('select-trading-account').value;
+      const q = ($('input-sub-search').value || '').toLowerCase();
+      const scopedSubs = taVal === 'ALL'
+        ? state.allSubs
+        : [...new Set(state.rawTrades.filter(x => x.tradingAccount === taVal).map(x => x.subAccount))].sort();
+
+      const list = scopedSubs.filter(s => s.toLowerCase().includes(q));
+      $('subaccount-list').innerHTML = list.length === 0
+        ? `<p class="text-[11px] text-slate-400 text-center py-2">-</p>`
+        : list.map(sub => {
+            const role = getRole(sub);
+            const badge = role === 'MM'
+              ? '<span class="px-1.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[9px] font-bold">MM</span>'
+              : role === 'LP'
+              ? '<span class="px-1.5 rounded bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 text-[9px] font-bold">LP</span>'
+              : '<span class="px-1.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 text-[9px] font-bold">Client</span>';
+            return `
+              <label class="flex items-center justify-between px-2 py-1 rounded-lg hover:bg-white dark:hover:bg-slate-800 text-xs cursor-pointer">
+                <span class="flex items-center gap-2">
+                  <input type="checkbox" data-sub="${sub}" ${state.selectedSubs.has(sub) ? 'checked' : ''} class="chk-sub accent-emerald-600" />
+                  <span class="font-mono">${sub}</span>
+                </span>
+                ${badge}
+              </label>
+            `;
+          }).join('');
+    }
+
+    function filterTrades() {
+      const taVal = $('select-trading-account').value;
+      const xtMode = $('select-xt-mode').value;
+      const prodVal = $('select-product').value;
+      const contVal = $('select-contract').value;
+      const dailyD = $('input-daily-date').value;
+      const startD = $('input-start-date').value;
+      const endD = $('input-end-date').value;
+
+      state.filteredTrades = state.rawTrades.filter(tr => {
+        if (state.periodMode === 'daily') {
+          if (dailyD && tr.tradingDate !== dailyD) return false;
+        } else {
+          if (startD && tr.tradingDate < startD) return false;
+          if (endD && tr.tradingDate > endD) return false;
+        }
+        if (taVal !== 'ALL' && tr.tradingAccount !== taVal) return false;
+        if (prodVal !== 'ALL' && tr.parentProduct !== prodVal) return false;
+        if (contVal !== 'ALL' && tr.contractTicker !== contVal) return false;
+        if (!state.selectedRoles.has(getRole(tr.subAccount))) return false;
+        if (!state.selectedSubs.has(tr.subAccount)) return false;
+
+        const xt = isXtEffective(tr);
+        if (state.tradeCond === 'NORMAL' && tr.category !== 'NORMAL') return false;
+        if (state.tradeCond === 'BLOCK' && tr.category !== 'BLOCK') return false;
+        if (state.tradeCond === 'CROSSTRADE' && !xt) return false;
+
+        if (xtMode === 'EXCLUDE' && xt) return false;
+        if (xtMode === 'ONLY' && !xt) return false;
+        if (xtMode === 'ACCOUNT_RULE' && state.taXtFlags[tr.tradingAccount]) return false;
+        return true;
+      });
+    }
+
+    // =========================================================================
+    // 5. AGGREGATION & RENDERING
+    // =========================================================================
+    function computeSummary() {
+      const mmByProd = new Map();
+      const lpBySub = new Map();
+      const lpByProd = new Map();
+      const clientBySub = new Map();
+      const clientByProd = new Map();
+
+      let blockLots = 0, blockUsd = 0;
+
+      state.filteredTrades.forEach(tr => {
+        const usd = getTradeUsd(tr);
+        if (tr.category === 'BLOCK') {
+          blockLots += tr.quantity;
+          blockUsd += usd;
+          return;
+        }
+        const role = getRole(tr.subAccount);
+        const prod = tr.parentProduct || tr.contractTicker;
+        if (role === 'MM') {
+          const cur = mmByProd.get(prod) || { lots: 0, usd: 0 };
+          mmByProd.set(prod, { lots: cur.lots + tr.quantity, usd: cur.usd + usd });
+        } else if (role === 'LP') {
+          const curS = lpBySub.get(tr.subAccount) || { lots: 0, usd: 0 };
+          lpBySub.set(tr.subAccount, { lots: curS.lots + tr.quantity, usd: curS.usd + usd });
+          const curP = lpByProd.get(prod) || { lots: 0, usd: 0 };
+          lpByProd.set(prod, { lots: curP.lots + tr.quantity, usd: curP.usd + usd });
+        } else {
+          const curS = clientBySub.get(tr.subAccount) || { lots: 0, usd: 0 };
+          clientBySub.set(tr.subAccount, { lots: curS.lots + tr.quantity, usd: curS.usd + usd });
+          const curP = clientByProd.get(prod) || { lots: 0, usd: 0 };
+          clientByProd.set(prod, { lots: curP.lots + tr.quantity, usd: curP.usd + usd });
+        }
+      });
+
+      let mmLots = 0, mmUsd = 0;
+      mmByProd.forEach(v => { mmLots += v.lots; mmUsd += v.usd; });
+      let lpLots = 0, lpUsd = 0;
+      lpBySub.forEach(v => { lpLots += v.lots; lpUsd += v.usd; });
+      let clientLots = 0, clientUsd = 0;
+      clientBySub.forEach(v => { clientLots += v.lots; clientUsd += v.usd; });
+
+      const refundLots = mmLots + lpLots + blockLots;
+      const refundUsd = mmUsd + lpUsd + blockUsd;
+      const grandLots = refundLots + clientLots;
+      const grandUsd = refundUsd + clientUsd;
+
+      const m = state.layout.mode;
+      const showMM = state.selectedRoles.has('MM') && (m === 'ALL' ? true : m === 'CUSTOM' ? state.layout.showMM : mmLots > 0);
+      const showLP = state.selectedRoles.has('LP') && (m === 'ALL' ? true : m === 'CUSTOM' ? state.layout.showLP : lpLots > 0);
+      const showClient = state.selectedRoles.has('CLIENT') && (m === 'ALL' ? true : m === 'CUSTOM' ? state.layout.showClient : clientLots > 0);
+      const showBlock = m === 'ALL' ? true : m === 'CUSTOM' ? state.layout.showBlock : blockLots > 0;
+
+      return {
+        mmByProd, lpBySub, lpByProd, clientBySub, clientByProd,
+        mmLots, mmUsd, lpLots, lpUsd, clientLots, clientUsd,
+        blockLots, blockUsd, refundLots, refundUsd, grandLots, grandUsd,
+        vis: { showMM, showLP, showClient, showBlock, showProdDetail: state.layout.showProdDetail }
+      };
+    }
+
+    function renderAll() {
+      filterTrades();
+      const s = computeSummary();
+
+      // KPIs
+      let mmAll = 0, lpAll = 0, clAll = 0, normAll = 0, xtLots = 0, xtCount = 0;
+      state.filteredTrades.forEach(tr => {
+        const r = getRole(tr.subAccount);
+        if (r === 'MM') mmAll += tr.quantity;
+        else if (r === 'LP') lpAll += tr.quantity;
+        else clAll += tr.quantity;
+        if (tr.category === 'NORMAL') normAll += tr.quantity;
+        if (isXtEffective(tr)) { xtLots += tr.quantity; xtCount++; }
+      });
+
+      $('kpi-total-lots').textContent = fmtLots(s.grandLots);
+      $('kpi-total-trades').textContent = `${state.filteredTrades.length.toLocaleString('en-US')} ${state.lang === 'id' ? 'transaksi' : 'trades'}`;
+      $('kpi-total-usd').textContent = fmtUsd(s.grandUsd);
+      $('kpi-mm-lots').textContent = fmtLots(mmAll);
+      $('kpi-lp-lots').textContent = fmtLots(lpAll);
+      $('kpi-client-lots').textContent = fmtLots(clAll);
+      $('kpi-block-lots').textContent = fmtLots(s.blockLots);
+      $('kpi-normal-sub').textContent = `Normal: ${fmtLots(normAll)}`;
+      $('kpi-xt-lots').textContent = fmtLots(xtLots);
+      $('kpi-xt-pairs').textContent = `${Math.floor(xtCount / 2)} ${state.lang === 'id' ? 'pasang' : 'pairs'}`;
+      $('badge-audit').textContent = state.filteredTrades.length;
+
+      // Report Header
+      const taVal = $('select-trading-account').value;
+      const customPer = $('input-period-label').value.trim();
+      $('rep-period').textContent = state.periodMode === 'daily'
+        ? `${$('input-daily-date').value} (Daily)`
+        : `${customPer || 'Period'} (${$('input-start-date').value} s/d ${$('input-end-date').value})`;
+      $('rep-cm').textContent = state.config.clearingMember || '';
+      $('rep-acc').textContent = taVal === 'ALL' ? (state.allTAs.join(' / ') || '-') : taVal;
+      $('rep-date').textContent = state.config.reportDate;
+
+      // Official Report Table
+      let html = `<tr><td colspan="3" class="h-2"></td></tr>`;
+      if (s.vis.showMM) {
+        html += `<tr><td colspan="3" class="px-3 py-1 font-bold italic underline">MM (Market Maker)</td></tr>`;
+        const rows = [...s.mmByProd.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        if (!rows.length) html += `<tr><td class="px-3 py-1 text-slate-400">-</td><td class="px-3 py-1 text-right font-mono">-</td><td class="px-3 py-1 text-right font-mono">$0.00</td></tr>`;
+        rows.forEach(([k, v]) => {
+          html += `<tr><td class="px-3 py-1">${k}</td><td class="px-3 py-1 text-right font-mono">${v.lots ? fmtLots(v.lots) : '-'}</td><td class="px-3 py-1 text-right font-mono">${fmtUsd(v.usd)}</td></tr>`;
+        });
+        html += `<tr class="official-subtotal font-bold"><td class="px-3 py-1.5">Total MM</td><td class="px-3 py-1.5 text-right font-mono subtotal-line">${s.mmLots ? fmtLots(s.mmLots) : '-'}</td><td class="px-3 py-1.5 text-right font-mono subtotal-line">${fmtUsd(s.mmUsd)}</td></tr>`;
+      }
+
+      if (s.vis.showLP) {
+        html += `<tr><td colspan="3" class="px-3 pt-2 pb-1 font-bold italic underline">LPs (Liquidity Provider)</td></tr>`;
+        const rows = [...s.lpBySub.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        if (!rows.length) html += `<tr><td class="px-3 py-1 text-slate-400">-</td><td class="px-3 py-1 text-right font-mono">-</td><td class="px-3 py-1 text-right font-mono">$0.00</td></tr>`;
+        rows.forEach(([k, v]) => {
+          html += `<tr><td class="px-3 py-1 font-mono">${k}</td><td class="px-3 py-1 text-right font-mono">${v.lots ? fmtLots(v.lots) : '-'}</td><td class="px-3 py-1 text-right font-mono">${fmtUsd(v.usd)}</td></tr>`;
+        });
+        if (s.vis.showProdDetail && s.lpByProd.size) {
+          html += `<tr><td colspan="3" class="px-3 pt-1 text-[11px] font-bold text-slate-500">LPs Product Summary:</td></tr>`;
+          [...s.lpByProd.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([k, v]) => {
+            html += `<tr class="text-xs text-slate-600 dark:text-slate-300"><td class="px-3 py-0.5 pl-6">• ${k}</td><td class="px-3 py-0.5 text-right font-mono">${fmtLots(v.lots)}</td><td class="px-3 py-0.5 text-right font-mono">${fmtUsd(v.usd)}</td></tr>`;
+          });
+        }
+        html += `<tr class="official-subtotal font-bold"><td class="px-3 py-1.5">Total LPs (Liquidity Provider)</td><td class="px-3 py-1.5 text-right font-mono subtotal-line">${s.lpLots ? fmtLots(s.lpLots) : '-'}</td><td class="px-3 py-1.5 text-right font-mono subtotal-line">${fmtUsd(s.lpUsd)}</td></tr>`;
+      }
+
+      if (s.vis.showClient) {
+        html += `<tr><td colspan="3" class="px-3 pt-2 pb-1 font-bold italic underline">Client Accounts</td></tr>`;
+        const rows = [...s.clientBySub.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        if (!rows.length) html += `<tr><td class="px-3 py-1 text-slate-400">-</td><td class="px-3 py-1 text-right font-mono">-</td><td class="px-3 py-1 text-right font-mono">$0.00</td></tr>`;
+        rows.forEach(([k, v]) => {
+          html += `<tr><td class="px-3 py-1 font-mono">${k}</td><td class="px-3 py-1 text-right font-mono">${v.lots ? fmtLots(v.lots) : '-'}</td><td class="px-3 py-1 text-right font-mono">${fmtUsd(v.usd)}</td></tr>`;
+        });
+        if (s.vis.showProdDetail && s.clientByProd.size) {
+          html += `<tr><td colspan="3" class="px-3 pt-1 text-[11px] font-bold text-slate-500">Client Product Summary:</td></tr>`;
+          [...s.clientByProd.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([k, v]) => {
+            html += `<tr class="text-xs text-slate-600 dark:text-slate-300"><td class="px-3 py-0.5 pl-6">• ${k}</td><td class="px-3 py-0.5 text-right font-mono">${fmtLots(v.lots)}</td><td class="px-3 py-0.5 text-right font-mono">${fmtUsd(v.usd)}</td></tr>`;
+          });
+        }
+        html += `<tr class="official-subtotal font-bold"><td class="px-3 py-1.5">Total Client Accounts</td><td class="px-3 py-1.5 text-right font-mono subtotal-line">${s.clientLots ? fmtLots(s.clientLots) : '-'}</td><td class="px-3 py-1.5 text-right font-mono subtotal-line">${fmtUsd(s.clientUsd)}</td></tr>`;
+      }
+
+      if (s.vis.showBlock) {
+        html += `<tr class="font-bold"><td class="px-3 py-2">Total Block Trade</td><td class="px-3 py-2 text-right font-mono">${s.blockLots ? fmtLots(s.blockLots) : '-'}</td><td class="px-3 py-2 text-right font-mono">${s.blockUsd ? fmtUsd(s.blockUsd) : '-'}</td></tr>`;
+      }
+
+      html += `<tr><td colspan="3" class="h-2"></td></tr>`;
+      if (s.vis.showClient && s.clientLots > 0 && (s.vis.showMM || s.vis.showLP || s.vis.showBlock)) {
+        html += `<tr class="bg-slate-100 dark:bg-slate-800 font-bold italic"><td class="px-3 py-1.5">Subtotal (Refund Fee MM &amp; LPs) :</td><td class="px-3 py-1.5 text-right font-mono">${fmtLots(s.refundLots)}</td><td class="px-3 py-1.5 text-right font-mono">${fmtUsd(s.refundUsd)}</td></tr>`;
+      }
+      html += `
+        <tr class="font-extrabold border-t-2 border-slate-900 dark:border-slate-500">
+          <td class="px-3 py-2 italic">${s.vis.showClient && s.clientLots > 0 ? 'TOTAL TRANSACTION VOLUME :' : 'TOTAL (Refund Fee MM & LPs) :'}</td>
+          <td class="px-3 py-2 text-right font-mono text-sm sm:text-base">${s.grandLots ? fmtLots(s.grandLots) : '-'}</td>
+          <td class="px-3 py-2 text-right font-mono text-sm sm:text-base">${fmtUsd(s.grandUsd)}</td>
+        </tr>
+      `;
+      $('official-tbody').innerHTML = html;
+
+      renderBreakdown();
+      renderAudit();
+      renderDailyCards();
+    }
+
+    function getBreakdownList() {
+      const map = new Map();
+      state.filteredTrades.forEach(tr => {
+        const key = `${tr.subAccount}|${tr.tradingAccount}|${tr.contractTicker}`;
+        if (!map.has(key)) {
+          map.set(key, {
+            subAccount: tr.subAccount,
+            role: getRole(tr.subAccount),
+            tradingAccount: tr.tradingAccount,
+            contractTicker: tr.contractTicker,
+            parentProduct: tr.parentProduct,
+            normal: 0, block: 0, xt: 0, total: 0, usd: 0
+          });
+        }
+        const r = map.get(key);
+        if (tr.category === 'BLOCK') r.block += tr.quantity;
+        else r.normal += tr.quantity;
+        if (isXtEffective(tr)) r.xt += tr.quantity;
+        r.total += tr.quantity;
+        r.usd += getTradeUsd(tr);
+      });
+      return [...map.values()].sort((a, b) => a.subAccount.localeCompare(b.subAccount));
+    }
+
+    function renderBreakdown() {
+      const q = ($('search-breakdown').value || '').toLowerCase();
+      const list = getBreakdownList().filter(r =>
+        `${r.subAccount} ${r.contractTicker} ${r.parentProduct} ${r.tradingAccount}`.toLowerCase().includes(q)
+      );
+      if (!list.length) {
+        $('breakdown-tbody').innerHTML = `<tr><td colspan="10" class="py-6 text-center text-slate-400">-</td></tr>`;
+        $('breakdown-tfoot').innerHTML = '';
+        return;
+      }
+      let sn = 0, sb = 0, sx = 0, st = 0, su = 0;
+      $('breakdown-tbody').innerHTML = list.map(r => {
+        sn += r.normal; sb += r.block; sx += r.xt; st += r.total; su += r.usd;
+        return `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/60">
+            <td class="py-2 px-4 font-mono font-bold">${r.subAccount}</td>
+            <td class="py-2 px-4 font-bold">${r.role}</td>
+            <td class="py-2 px-4 font-mono">${r.tradingAccount}</td>
+            <td class="py-2 px-4 font-semibold">${r.contractTicker}</td>
+            <td class="py-2 px-4">${r.parentProduct}</td>
+            <td class="py-2 px-4 text-right font-mono">${fmtLots(r.normal)}</td>
+            <td class="py-2 px-4 text-right font-mono text-indigo-600 dark:text-indigo-400 font-semibold">${fmtLots(r.block)}</td>
+            <td class="py-2 px-4 text-right font-mono text-amber-600 dark:text-amber-400">${fmtLots(r.xt)}</td>
+            <td class="py-2 px-4 text-right font-mono font-bold">${fmtLots(r.total)}</td>
+            <td class="py-2 px-4 text-right font-mono">${fmtUsd(r.usd)}</td>
+          </tr>
+        `;
+      }).join('');
+      $('breakdown-tfoot').innerHTML = `
+        <tr>
+          <td colspan="5" class="py-2.5 px-4">GRAND TOTAL</td>
+          <td class="py-2.5 px-4 text-right font-mono">${fmtLots(sn)}</td>
+          <td class="py-2.5 px-4 text-right font-mono">${fmtLots(sb)}</td>
+          <td class="py-2.5 px-4 text-right font-mono">${fmtLots(sx)}</td>
+          <td class="py-2.5 px-4 text-right font-mono">${fmtLots(st)}</td>
+          <td class="py-2.5 px-4 text-right font-mono">${fmtUsd(su)}</td>
+        </tr>
+      `;
+    }
+
+    function renderAudit() {
+      const st = $('select-audit-status').value;
+      const q = ($('search-audit').value || '').toLowerCase();
+      const list = state.filteredTrades.filter(tr => {
+        const xt = isXtEffective(tr);
+        if (st === 'CROSSTRADE' && !xt) return false;
+        if (st === 'BLOCK' && tr.category !== 'BLOCK') return false;
+        if (st === 'NORMAL' && (tr.category !== 'NORMAL' || xt)) return false;
+        if (q && !`${tr.tradeId} ${tr.subAccount} ${tr.contractTicker} ${tr.tradingAccount}`.toLowerCase().includes(q)) return false;
+        return true;
+      });
+      const slice = list.slice(0, 300);
+      $('audit-info').textContent = `${slice.length} / ${list.length}`;
+      $('audit-tbody').innerHTML = slice.map(tr => {
+        const xt = isXtEffective(tr);
+        return `
+          <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/60 ${xt ? 'bg-amber-50/40 dark:bg-amber-950/20' : ''}">
+            <td class="py-2 px-3 font-mono text-[11px]">${tr.tradingDate} ${tr.execTime}</td>
+            <td class="py-2 px-3 font-mono font-bold">${tr.tradingAccount}</td>
+            <td class="py-2 px-3 font-mono">${tr.subAccount}</td>
+            <td class="py-2 px-3 font-bold">${getRole(tr.subAccount)}</td>
+            <td class="py-2 px-3 font-semibold">${tr.contractTicker}</td>
+            <td class="py-2 px-3 text-center font-bold ${tr.bs === 'Buy' ? 'text-sky-600' : 'text-rose-600'}">${tr.bs}</td>
+            <td class="py-2 px-3 text-right font-mono font-bold">${fmtLots(tr.quantity)}</td>
+            <td class="py-2 px-3 text-right font-mono">${tr.tradePrice.toFixed(2)}</td>
+            <td class="py-2 px-3">${tr.category === 'BLOCK' ? 'Block Trade' : 'Normal'}</td>
+            <td class="py-2 px-3 font-bold text-amber-600 dark:text-amber-400">${tr.isCrosstrade ? tr.xtPairId : state.taXtFlags[tr.tradingAccount] ? 'TA-XT' : '-'}</td>
+            <td class="py-2 px-3 font-mono text-[11px] text-slate-500">${tr.tradeId}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 6. INDEXEDDB & PC FOLDER BACKUP ARCHIVE
+    // =========================================================================
+    function openDB() {
+      return new Promise((res, rej) => {
+        const req = indexedDB.open('TV_Summary_Archive', 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('snaps')) db.createObjectStore('snaps', { keyPath: 'id' });
+        };
+        req.onsuccess = (e) => res(e.target.result);
+        req.onerror = (e) => rej(e.target.error);
+      });
+    }
+
+    async function saveSnapshot(label) {
+      if (!state.rawTrades.length) return;
+      const dates = [...new Set(state.rawTrades.map(x => x.tradingDate).filter(Boolean))].sort();
+      const totalLots = state.rawTrades.reduce((a, b) => a + (b.quantity || 0), 0);
+      const snap = {
+        id: `SNAP-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        source: 'LOCAL_DB',
+        label,
+        dates,
+        rows: state.rawTrades.length,
+        totalLots,
+        trades: state.rawTrades
+      };
+
+      try {
+        const db = await openDB();
+        await new Promise((res) => {
+          const tx = db.transaction('snaps', 'readwrite');
+          tx.objectStore('snaps').put(snap);
+          tx.oncomplete = res;
+        });
+      } catch {}
+
+      if (state.pcDirHandle) {
+        try {
+          const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+          const fh = await state.pcDirHandle.getFileHandle(`FNO_Backup_${stamp}.json`, { create: true });
+          const w = await fh.createWritable();
+          await w.write(JSON.stringify(snap, null, 2));
+          await w.close();
+          await scanPCFolder(true);
+        } catch {}
+      }
+      await loadHistoryList();
+    }
+
+    async function loadHistoryList() {
+      try {
+        const db = await openDB();
+        state.dbSnapshots = await new Promise((res) => {
+          const tx = db.transaction('snaps', 'readonly');
+          const req = tx.objectStore('snaps').getAll();
+          req.onsuccess = () => res(req.result || []);
+        });
+      } catch {
+        state.dbSnapshots = [];
+      }
+      const total = state.dbSnapshots.length + state.pcSnapshots.length;
+      $('history-count-pill').textContent = total;
+      $('badge-history').textContent = total;
+      refreshHistoryDateSelect();
+      renderHistoryTable();
+    }
+
+    async function pickPCFolder() {
+      if (!('showDirectoryPicker' in window)) {
+        toast('Browser tidak mendukung akses folder langsung. Arsip IndexedDB tetap aktif.', 'info');
+        return;
+      }
+      try {
+        state.pcDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        $('pc-folder-label').textContent = `📁 ${state.pcDirHandle.name}`;
+        $('pc-badge-detail').textContent = 'PC Folder Connected';
+        $('pc-dot').className = 'w-2 h-2 rounded-full bg-emerald-400';
+        $('pc-status-pill').textContent = `PC: ${state.pcDirHandle.name}`;
+        await scanPCFolder(true);
+        toast(`Folder PC "${state.pcDirHandle.name}" terhubung!`);
+      } catch {}
+    }
+
+    async function scanPCFolder(silent = false) {
+      if (!state.pcDirHandle) return;
+      const found = [];
+      for await (const [name, entry] of state.pcDirHandle.entries()) {
+        if (entry.kind === 'file' && name.endsWith('.json') && name.startsWith('FNO_Backup_')) {
+          try {
+            const txt = await (await entry.getFile()).text();
+            const obj = JSON.parse(txt);
+            if (obj && Array.isArray(obj.trades)) {
+              found.push({ ...obj, id: `PC-${name}`, source: 'PC_FOLDER', label: name });
+            }
+          } catch {}
+        }
+      }
+      state.pcSnapshots = found;
+      await loadHistoryList();
+      if (!silent) toast(`Ditemukan ${found.length} file backup di folder PC.`, 'info');
+    }
+
+    function refreshHistoryDateSelect() {
+      const activeDates = [...new Set(state.rawTrades.map(x => x.tradingDate).filter(Boolean))].sort().reverse();
+      let opts = `<option value="ALL">${t('allDatesPeriodic')}</option>`;
+      activeDates.forEach(d => {
+        opts += `<option value="ACTIVE:${d}">${d}</option>`;
+      });
+      [...state.pcSnapshots, ...state.dbSnapshots].forEach(s => {
+        (s.dates || []).forEach(d => {
+          if (!activeDates.includes(d)) {
+            opts += `<option value="SNAP:${s.id}:${d}">[Backup] ${d} — ${s.label}</option>`;
+          }
+        });
+      });
+      $('select-history-date').innerHTML = opts;
+    }
+
+    function renderDailyCards() {
+      const map = new Map();
+      state.rawTrades.forEach(tr => {
+        const cur = map.get(tr.tradingDate) || { rows: 0, lots: 0 };
+        cur.rows++;
+        cur.lots += tr.quantity;
+        map.set(tr.tradingDate, cur);
+      });
+      const sorted = [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+      $('daily-cards-box').innerHTML = sorted.map(([d, v]) => `
+        <div class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 flex items-center justify-between">
+          <button type="button" data-jump="${d}" class="text-left cursor-pointer">
+            <div class="font-mono text-xs font-bold">${d}</div>
+            <div class="text-[11px] text-slate-500">${v.rows} trades • ${fmtLots(v.lots)} lots</div>
+          </button>
+          <button type="button" data-del-date="${d}" class="text-xs font-bold text-rose-500 px-2 py-1 cursor-pointer">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function renderHistoryTable() {
+      const all = [...state.pcSnapshots, ...state.dbSnapshots].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      if (!all.length) {
+        $('history-tbody').innerHTML = `<tr><td colspan="7" class="py-6 text-center text-slate-400">-</td></tr>`;
+        return;
+      }
+      $('history-tbody').innerHTML = all.map(s => `
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/60">
+          <td class="py-2 px-4 font-mono text-[11px]">${new Date(s.createdAt).toLocaleString()}</td>
+          <td class="py-2 px-4 font-bold">${s.source === 'PC_FOLDER' ? 'PC Folder' : 'Browser DB'}</td>
+          <td class="py-2 px-4 font-semibold">${s.label}</td>
+          <td class="py-2 px-4 font-mono text-[11px]">${(s.dates || []).join(', ')}</td>
+          <td class="py-2 px-4 text-right font-mono">${s.rows}</td>
+          <td class="py-2 px-4 text-right font-mono font-bold">${fmtLots(s.totalLots)}</td>
+          <td class="py-2 px-4 text-right space-x-1">
+            <button type="button" data-load-snap="${s.id}" class="px-2 py-1 rounded bg-[#19612e] text-white font-bold cursor-pointer">Load</button>
+            <button type="button" data-merge-snap="${s.id}" class="px-2 py-1 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold cursor-pointer">+Merge</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // =========================================================================
+    // 7. IMPORT FILES & EXPORT EXCEL / PDF
+    // =========================================================================
+    async function handleFiles(files) {
+      if (!files || !files.length) return;
+      const append = document.querySelector('input[name="imp-mode"]:checked').value === 'append';
+      const dedup = $('chk-dedup').checked;
+      let allRows = [];
+      const names = [];
+
+      for (const file of files) {
+        names.push(file.name);
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'csv') {
+          const rows = await new Promise(res => Papa.parse(file, { header: true, skipEmptyLines: true, complete: r => res(r.data || []) }));
+          allRows = allRows.concat(rows);
+        } else if (ext === 'xlsx' || ext === 'xls') {
+          const buf = await file.arrayBuffer();
+          const wb = XLSX.read(buf, { type: 'array' });
+          allRows = allRows.concat(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' }));
+        } else if (ext === 'json') {
+          const obj = JSON.parse(await file.text());
+          const arr = Array.isArray(obj) ? obj : (obj.trades || []);
+          allRows = allRows.concat(arr.map(x => ({
+            'Trading Account Number': x.tradingAccount || x['Trading Account Number'],
+            'Sub Account': x.subAccount || x['Sub Account'],
+            'Trading Date': x.tradingDate || x['Trading Date'],
+            'Contract Ticker': x.contractTicker || x['Contract Ticker'],
+            'Parent Product': x.parentProduct || x['Parent Product'],
+            'B/S': x.bs || x['B/S'],
+            'Quantity': x.quantity || x['Quantity'],
+            'Trade Price': x.tradePrice || x['Trade Price'],
+            'Contract/Premium Amount': x.amount || x['Contract/Premium Amount'],
+            'Trade Type': x.rawType || x['Trade Type'],
+            'Order Channel': x.channel || x['Order Channel'],
+            'Execution Time': x.execTime || x['Execution Time'],
+            'Trade ID': x.tradeId || x['Trade ID']
+          })));
+        }
+      }
+
+      const label = names.length === 1 ? names[0] : `${names.length} Files (${names[0]}...)`;
+      const added = ingestRows(allRows, label, append, dedup);
+      if (added > 0) {
+        await saveSnapshot(label);
+        $('modal-import').classList.add('hidden');
+        toast(`Berhasil import ${added} baris dari ${names.length} file!`);
+      }
+    }
+
+    function exportExcel() {
+      const wb = XLSX.utils.book_new();
+      const s = computeSummary();
+      const rows = [
+        ['TRANSACTION VOLUME'],
+        ['Period', $('rep-period').textContent],
+        ['Clearing Member', $('rep-cm').textContent],
+        ['Account Number', $('rep-acc').textContent],
+        ['Date', $('rep-date').textContent],
+        [],
+        ['Contract', 'Volume (lots)', 'USD']
+      ];
+
+      if (s.vis.showMM) {
+        rows.push(['MM (Market Maker)', '', '']);
+        [...s.mmByProd.entries()].forEach(([k, v]) => rows.push([k, v.lots, v.usd]));
+        rows.push(['Total MM', s.mmLots, s.mmUsd], []);
+      }
+      if (s.vis.showLP) {
+        rows.push(['LPs (Liquidity Provider)', '', '']);
+        [...s.lpBySub.entries()].forEach(([k, v]) => rows.push([k, v.lots, v.usd]));
+        rows.push(['Total LPs (Liquidity Provider)', s.lpLots, s.lpUsd], []);
+      }
+      if (s.vis.showClient) {
+        rows.push(['Client Accounts', '', '']);
+        [...s.clientBySub.entries()].forEach(([k, v]) => rows.push([k, v.lots, v.usd]));
+        rows.push(['Total Client Accounts', s.clientLots, s.clientUsd], []);
+      }
+      if (s.vis.showBlock) {
+        rows.push(['Total Block Trade', s.blockLots, s.blockUsd], []);
+      }
+      rows.push([
+        s.vis.showClient && s.clientLots > 0 ? 'TOTAL TRANSACTION VOLUME' : 'TOTAL (Refund Fee MM & LPs)',
+        s.grandLots,
+        s.grandUsd
+      ]);
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{ wch: 35 }, { wch: 18 }, { wch: 18 }];
+      XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(getBreakdownList()), 'Breakdown');
+      XLSX.writeFile(wb, `Transaction_Volume_Summary_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast('Export Excel (.xlsx) selesai!');
+    }
+
+    function exportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const s = computeSummary();
+
+      doc.setFillColor(83, 158, 56);
+      doc.rect(14, 14, 182, 7.5, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(255, 255, 255);
+      doc.text('TRANSACTION VOLUME', 17, 19.2);
+
+      doc.setTextColor(20, 20, 20);
+      doc.setFont('helvetica', 'bolditalic');
+      doc.setFontSize(9.5);
+      const meta = [
+        ['Period', `: ${$('rep-period').textContent}`],
+        ['Clearing Member', `: ${$('rep-cm').textContent}`],
+        ['Account Number', `: ${$('rep-acc').textContent}`],
+        ['Date', `: ${$('rep-date').textContent}`]
+      ];
+      let y = 28;
+      meta.forEach(([k, v]) => { doc.text(k, 16, y); doc.text(v, 62, y); y += 5.5; });
+
+      const body = [];
+      if (s.vis.showMM) {
+        body.push([{ content: 'MM (Market Maker)', colSpan: 3, styles: { fontStyle: 'bolditalic' } }]);
+        [...s.mmByProd.entries()].forEach(([k, v]) => body.push([k, v.lots ? fmtLots(v.lots) : '-', fmtUsd(v.usd)]));
+        body.push([
+          { content: 'Total MM', styles: { fillColor: [226, 239, 218], fontStyle: 'bold' } },
+          { content: s.mmLots ? fmtLots(s.mmLots) : '-', styles: { fillColor: [226, 239, 218], fontStyle: 'bold', halign: 'right' } },
+          { content: fmtUsd(s.mmUsd), styles: { fillColor: [226, 239, 218], fontStyle: 'bold', halign: 'right' } }
+        ]);
+      }
+      if (s.vis.showLP) {
+        body.push([{ content: 'LPs (Liquidity Provider)', colSpan: 3, styles: { fontStyle: 'bolditalic' } }]);
+        [...s.lpBySub.entries()].forEach(([k, v]) => body.push([k, v.lots ? fmtLots(v.lots) : '-', fmtUsd(v.usd)]));
+        body.push([
+          { content: 'Total LPs (Liquidity Provider)', styles: { fillColor: [226, 239, 218], fontStyle: 'bold' } },
+          { content: s.lpLots ? fmtLots(s.lpLots) : '-', styles: { fillColor: [226, 239, 218], fontStyle: 'bold', halign: 'right' } },
+          { content: fmtUsd(s.lpUsd), styles: { fillColor: [226, 239, 218], fontStyle: 'bold', halign: 'right' } }
+        ]);
+      }
+      if (s.vis.showClient) {
+        body.push([{ content: 'Client Accounts', colSpan: 3, styles: { fontStyle: 'bolditalic' } }]);
+        [...s.clientBySub.entries()].forEach(([k, v]) => body.push([k, v.lots ? fmtLots(v.lots) : '-', fmtUsd(v.usd)]));
+        body.push([
+          { content: 'Total Client Accounts', styles: { fillColor: [226, 239, 218], fontStyle: 'bold' } },
+          { content: s.clientLots ? fmtLots(s.clientLots) : '-', styles: { fillColor: [226, 239, 218], fontStyle: 'bold', halign: 'right' } },
+          { content: fmtUsd(s.clientUsd), styles: { fillColor: [226, 239, 218], fontStyle: 'bold', halign: 'right' } }
+        ]);
+      }
+      if (s.vis.showBlock) {
+        body.push([
+          { content: 'Total Block Trade', styles: { fontStyle: 'bold' } },
+          { content: s.blockLots ? fmtLots(s.blockLots) : '-', styles: { fontStyle: 'bold', halign: 'right' } },
+          { content: s.blockUsd ? fmtUsd(s.blockUsd) : '-', styles: { halign: 'right' } }
+        ]);
+      }
+      body.push([
+        { content: s.vis.showClient && s.clientLots > 0 ? 'TOTAL TRANSACTION VOLUME :' : 'TOTAL (Refund Fee MM & LPs) :', styles: { fontStyle: 'bolditalic' } },
+        { content: s.grandLots ? fmtLots(s.grandLots) : '-', styles: { fontStyle: 'bold', halign: 'right' } },
+        { content: fmtUsd(s.grandUsd), styles: { fontStyle: 'bold', halign: 'right' } }
+      ]);
+
+      doc.autoTable({
+        startY: 52,
+        margin: { left: 14, right: 14 },
+        head: [['Contract', 'Volume (lots)', 'USD']],
+        body,
+        theme: 'plain',
+        headStyles: { fillColor: [22, 91, 38], textColor: [255, 255, 255], fontStyle: 'bold' },
+        columnStyles: { 0: { cellWidth: 96 }, 1: { cellWidth: 43, halign: 'right' }, 2: { cellWidth: 43, halign: 'right' } },
+        didDrawPage: (d) => {
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.5);
+          doc.rect(14, 52, 182, d.cursor.y - 52);
+        }
+      });
+
+      doc.save(`Transaction_Volume_Summary_${new Date().toISOString().slice(0, 10)}.pdf`);
+      toast('Export PDF selesai!');
+    }
+
+    // =========================================================================
+    // 8. UI INTERACTIONS & INITIALIZATION
+    // =========================================================================
+    function switchTab(name) {
+      ['report', 'breakdown', 'audit', 'history'].forEach(tab => {
+        $(`panel-${tab}`).classList.toggle('hidden', tab !== name);
+      });
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        const active = btn.getAttribute('data-tab') === name;
+        btn.className = active
+          ? 'nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#144522] text-white cursor-pointer'
+          : 'nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer';
+      });
+      if (name === 'history') loadHistoryList();
+    }
+
+    function setPeriodMode(mode) {
+      state.periodMode = mode;
+      $('wrap-daily').classList.toggle('hidden', mode !== 'daily');
+      $('wrap-periodic').classList.toggle('hidden', mode === 'daily');
+      $('btn-mode-daily').className = mode === 'daily'
+        ? 'py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-[#144522] dark:text-white shadow-xs cursor-pointer'
+        : 'py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer';
+      $('btn-mode-periodic').className = mode === 'periodic'
+        ? 'py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 text-[#144522] dark:text-white shadow-xs cursor-pointer'
+        : 'py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer';
+      renderAll();
+    }
+
+    function bindEvents() {
+      $('btn-theme').addEventListener('click', () => {
+        state.dark = !state.dark;
+        localStorage.setItem('tv_theme', state.dark ? 'dark' : 'light');
+        applyTheme();
+      });
+
+      $('btn-lang-id').addEventListener('click', () => { state.lang = 'id'; localStorage.setItem('tv_lang', 'id'); applyLanguage(); });
+      $('btn-lang-en').addEventListener('click', () => { state.lang = 'en'; localStorage.setItem('tv_lang', 'en'); applyLanguage(); });
+
+      $('btn-top-history').addEventListener('click', () => switchTab('history'));
+      $('btn-side-history').addEventListener('click', () => switchTab('history'));
+      $('btn-reset-sample').addEventListener('click', () => {
+        Papa.parse(SAMPLE_CSV, { header: true, skipEmptyLines: true, complete: r => { ingestRows(r.data, 'F&O Trade Listing (Sample)', false); toast('Sample data dimuat.'); } });
+      });
+
+      $('btn-mode-daily').addEventListener('click', () => setPeriodMode('daily'));
+      $('btn-mode-periodic').addEventListener('click', () => setPeriodMode('periodic'));
+      $('input-daily-date').addEventListener('change', renderAll);
+      $('input-start-date').addEventListener('change', renderAll);
+      $('input-end-date').addEventListener('change', renderAll);
+      $('input-period-label').addEventListener('input', renderAll);
+
+      $('select-history-date').addEventListener('change', (e) => {
+        const v = e.target.value;
+        if (v === 'ALL') { setPeriodMode('periodic'); return; }
+        if (v.startsWith('ACTIVE:')) {
+          const d = v.slice(7);
+          $('input-daily-date').value = d;
+          setPeriodMode('daily');
+        } else if (v.startsWith('SNAP:')) {
+          const [, id, d] = v.split(':');
+          const snap = [...state.pcSnapshots, ...state.dbSnapshots].find(x => x.id === id);
+          if (snap) {
+            state.rawTrades = snap.trades;
+            detectCrosstrades(state.rawTrades);
+            initFiltersFromData();
+            $('input-daily-date').value = d;
+            setPeriodMode('daily');
+          }
+        }
+      });
+
+      $('select-trading-account').addEventListener('change', () => {
+        refreshCascadingDropdowns();
+        renderAll();
+      });
+      $('select-xt-mode').addEventListener('change', renderAll);
+      $('ta-xt-list').addEventListener('change', (e) => {
+        if (e.target.classList.contains('chk-ta-xt')) {
+          state.taXtFlags[e.target.getAttribute('data-ta')] = e.target.checked;
+          renderAll();
+        }
+      });
+
+      $('btn-sub-all').addEventListener('click', () => { state.allSubs.forEach(s => state.selectedSubs.add(s)); renderSubAccountCheckboxes(); renderAll(); });
+      $('btn-sub-none').addEventListener('click', () => { state.selectedSubs.clear(); renderSubAccountCheckboxes(); renderAll(); });
+      $('input-sub-search').addEventListener('input', renderSubAccountCheckboxes);
+      $('subaccount-list').addEventListener('change', (e) => {
+        if (e.target.classList.contains('chk-sub')) {
+          const sub = e.target.getAttribute('data-sub');
+          if (e.target.checked) state.selectedSubs.add(sub);
+          else state.selectedSubs.delete(sub);
+          renderAll();
+        }
+      });
+
+      $('select-product').addEventListener('change', () => { refreshContractsDropdown(); renderAll(); });
+      $('select-contract').addEventListener('change', renderAll);
+
+      $('btn-roles-all').addEventListener('click', () => {
+        state.selectedRoles = new Set(['MM', 'LP', 'CLIENT']);
+        document.querySelectorAll('.role-btn').forEach(b => {
+          const r = b.getAttribute('data-role');
+          b.textContent = `✓ ${r === 'CLIENT' ? 'Client' : r}`;
+          b.classList.remove('opacity-40');
+        });
+        renderAll();
+      });
+
+      document.querySelectorAll('.role-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const r = btn.getAttribute('data-role');
+          if (state.selectedRoles.has(r) && state.selectedRoles.size > 1) state.selectedRoles.delete(r);
+          else state.selectedRoles.add(r);
+          document.querySelectorAll('.role-btn').forEach(b => {
+            const role = b.getAttribute('data-role');
+            const on = state.selectedRoles.has(role);
+            b.textContent = `${on ? '✓' : '○'} ${role === 'CLIENT' ? 'Client' : role}`;
+            b.classList.toggle('opacity-40', !on);
+          });
+          renderAll();
+        });
+      });
+
+      document.querySelectorAll('.cond-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.tradeCond = btn.getAttribute('data-cond');
+          document.querySelectorAll('.cond-btn').forEach(b => {
+            const active = b.getAttribute('data-cond') === state.tradeCond;
+            b.className = active
+              ? 'cond-btn py-1.5 rounded-lg text-[11px] font-extrabold bg-[#144522] text-white cursor-pointer'
+              : 'cond-btn py-1.5 rounded-lg text-[11px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer';
+          });
+          renderAll();
+        });
+      });
+
+      $('btn-reset-filters').addEventListener('click', () => {
+        state.taXtFlags = {};
+        state.selectedRoles = new Set(['MM', 'LP', 'CLIENT']);
+        state.tradeCond = 'ALL';
+        initFiltersFromData();
+        setPeriodMode('periodic');
+        toast('Filter direset.');
+      });
+
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.getAttribute('data-tab')));
+      });
+
+      document.querySelectorAll('.layout-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.layout.mode = btn.getAttribute('data-layout');
+          $('custom-layout-checks').classList.toggle('hidden', state.layout.mode !== 'CUSTOM');
+          document.querySelectorAll('.layout-btn').forEach(b => {
+            const on = b.getAttribute('data-layout') === state.layout.mode;
+            b.className = on
+              ? 'layout-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-[#19612e] text-white cursor-pointer'
+              : 'layout-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 cursor-pointer';
+          });
+          renderAll();
+        });
+      });
+
+      ['mm', 'lp', 'client', 'block', 'proddetail'].forEach(k => {
+        $(`chk-sec-${k}`).addEventListener('change', (e) => {
+          if (k === 'mm') state.layout.showMM = e.target.checked;
+          if (k === 'lp') state.layout.showLP = e.target.checked;
+          if (k === 'client') state.layout.showClient = e.target.checked;
+          if (k === 'block') state.layout.showBlock = e.target.checked;
+          if (k === 'proddetail') state.layout.showProdDetail = e.target.checked;
+          renderAll();
+        });
+      });
+
+      $('search-breakdown').addEventListener('input', renderBreakdown);
+      $('select-audit-status').addEventListener('change', renderAudit);
+      $('search-audit').addEventListener('input', renderAudit);
+
+      // Import Modal
+      $('btn-open-import').addEventListener('click', () => $('modal-import').classList.remove('hidden'));
+      $('btn-add-more-files').addEventListener('click', () => $('modal-import').classList.remove('hidden'));
+      $('btn-close-import').addEventListener('click', () => $('modal-import').classList.add('hidden'));
+      $('btn-choose-single').addEventListener('click', () => { $('file-single').value = ''; $('file-single').click(); });
+      $('btn-choose-multi').addEventListener('click', () => { $('file-multi').value = ''; $('file-multi').click(); });
+      $('file-single').addEventListener('change', (e) => handleFiles(e.target.files));
+      $('file-multi').addEventListener('change', (e) => handleFiles(e.target.files));
+      $('dropzone').addEventListener('click', () => { $('file-multi').value = ''; $('file-multi').click(); });
+      $('dropzone').addEventListener('dragover', (e) => e.preventDefault());
+      $('dropzone').addEventListener('drop', (e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); });
+
+      // Mapping Modal
+      $('btn-open-mapping').addEventListener('click', () => {
+        $('cfg-cm').value = state.config.clearingMember || '';
+        $('cfg-rep-date').value = state.config.reportDate;
+        $('cfg-mm').value = state.config.mmAccounts.join('\n');
+        $('cfg-lp').value = state.config.lpAccounts.join('\n');
+        $('cfg-usd-mode').value = state.config.usdMode;
+        $('cfg-fee-rate').value = state.config.feeRate;
+        $('modal-mapping').classList.remove('hidden');
+      });
+      $('btn-close-mapping').addEventListener('click', () => $('modal-mapping').classList.add('hidden'));
+      $('btn-cancel-mapping').addEventListener('click', () => $('modal-mapping').classList.add('hidden'));
+      $('btn-auto-lp').addEventListener('click', () => {
+        const mm = $('cfg-mm').value.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean);
+        const lp = $('cfg-lp').value.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean);
+        const extra = state.allSubs.filter(s => !mm.includes(s) && !lp.includes(s));
+        $('cfg-lp').value = [...lp, ...extra].join('\n');
+      });
+      $('btn-save-mapping').addEventListener('click', () => {
+        state.config.clearingMember = $('cfg-cm').value.trim();
+        state.config.reportDate = $('cfg-rep-date').value.trim() || 'Friday, 27 November 2026';
+        state.config.mmAccounts = [...new Set($('cfg-mm').value.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean))];
+        state.config.lpAccounts = [...new Set($('cfg-lp').value.split(/[\n,;]+/).map(x => x.trim()).filter(Boolean))];
+        state.config.usdMode = $('cfg-usd-mode').value;
+        state.config.feeRate = parseFloat($('cfg-fee-rate').value) || 0;
+        localStorage.setItem('tv_mapping_cfg', JSON.stringify(state.config));
+        $('modal-mapping').classList.add('hidden');
+        renderSubAccountCheckboxes();
+        renderAll();
+        toast('Konfigurasi disimpan!');
+      });
+
+      // History & Backup Actions
+      $('btn-pick-folder').addEventListener('click', pickPCFolder);
+      $('btn-backup-now').addEventListener('click', async () => { await saveSnapshot($('dataset-name').textContent); toast('Backup disimpan!'); });
+      $('btn-scan-folder').addEventListener('click', () => scanPCFolder(false));
+      $('btn-clear-history').addEventListener('click', async () => {
+        const db = await openDB();
+        await new Promise(res => { const tx = db.transaction('snaps', 'readwrite'); tx.objectStore('snaps').clear(); tx.oncomplete = res; });
+        await loadHistoryList();
+      });
+
+      $('daily-cards-box').addEventListener('click', (e) => {
+        const j = e.target.closest('[data-jump]');
+        if (j) { $('input-daily-date').value = j.getAttribute('data-jump'); setPeriodMode('daily'); switchTab('report'); return; }
+        const del = e.target.closest('[data-del-date]');
+        if (del) {
+          const d = del.getAttribute('data-del-date');
+          state.rawTrades = state.rawTrades.filter(x => x.tradingDate !== d);
+          detectCrosstrades(state.rawTrades);
+          initFiltersFromData();
+          renderAll();
+        }
+      });
+
+      $('history-tbody').addEventListener('click', (e) => {
+        const ld = e.target.closest('[data-load-snap]');
+        const mg = e.target.closest('[data-merge-snap]');
+        const id = ld ? ld.getAttribute('data-load-snap') : mg ? mg.getAttribute('data-merge-snap') : null;
+        if (!id) return;
+        const snap = [...state.pcSnapshots, ...state.dbSnapshots].find(x => x.id === id);
+        if (!snap) return;
+        if (ld) {
+          state.rawTrades = snap.trades;
+          detectCrosstrades(state.rawTrades);
+          $('dataset-name').textContent = snap.label;
+          initFiltersFromData();
+          renderAll();
+          switchTab('report');
+          toast(`Snapshot "${snap.label}" dimuat!`);
+        } else {
+          ingestRows(snap.trades.map(x => ({
+            'Trading Account Number': x.tradingAccount,
+            'Sub Account': x.subAccount,
+            'Trading Date': x.tradingDate,
+            'Contract Ticker': x.contractTicker,
+            'Parent Product': x.parentProduct,
+            'B/S': x.bs,
+            'Quantity': x.quantity,
+            'Trade Price': x.tradePrice,
+            'Trade Type': x.rawType,
+            'Execution Time': x.execTime,
+            'Trade ID': x.tradeId
+          })), `Merged (${snap.label})`, true, true);
+          switchTab('report');
+        }
+      });
+
+      // Export Buttons
+      $('btn-export-excel').addEventListener('click', exportExcel);
+      $('btn-export-pdf').addEventListener('click', exportPDF);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      applyTheme();
+      bindEvents();
+      Papa.parse(SAMPLE_CSV, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (r) => {
+          ingestRows(r.data, 'F&O Trade Listing (Sample)', false);
+          applyLanguage();
+        }
+      });
+      await loadHistoryList();
+    });
+  </script>
+</body>
+</html>
